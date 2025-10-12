@@ -14,7 +14,7 @@ local.properties
 .settings/
 .loadpath
 .recommenders
-kube
+.kube
 # External tool builders
 .externalToolBuilders/
 .idea
