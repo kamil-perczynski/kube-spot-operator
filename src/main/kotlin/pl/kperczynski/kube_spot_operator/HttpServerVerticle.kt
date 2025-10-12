@@ -85,8 +85,11 @@ class HttpServerVerticle(
     router.get("/.well-known/openid-configuration").handler {
       kubeClient.fetchOpenIdConfiguration()
         .onSuccess { openidConfiguration ->
-
           openidConfiguration.put("jwks_uri", kubeClientProps.externalJwksUri)
+          openidConfiguration.put(
+            "claims_supported",
+            JsonArray().add("sub").add("iss").add("aud").add("exp").add("iat")
+          )
 
           it.response()
             .setStatusCode(HttpResponseStatus.OK.code())
