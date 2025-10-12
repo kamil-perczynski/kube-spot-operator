@@ -60,7 +60,7 @@ class KubeClient(
 }
 
 fun kubeHttpClient(vertx: Vertx, kubeClientProps: KubeClientProps, log: Logger): HttpClient {
-  val origin = URI.create(kubeClientProps.apiOrigin);
+  val origin = URI.create(kubeClientProps.apiOrigin)
 
   val schemePort = when (origin.scheme) {
     "https" -> 443
