@@ -1,0 +1,12 @@
+{
+  "server": {
+    "port": 8080
+  },
+  "kube": {
+    "apiOrigin": "https://kubernetes.default.svc:6443",
+    "tokenPath": "./kube/token",
+    "caCertPath": "./kube/ca.crt",
+    "jwksEndpoint": "/openid/v1/jwks",
+    "sslTrustAll": false
+  }
+}
