@@ -5,5 +5,7 @@ data class KubeClientProps(
   val caCertPath: String,
   val tokenPath: String,
   val jwksEndpoint: String,
+  val openIdConfigurationEndpoint: String,
+  val externalJwksUri: String,
   val sslTrustAll: Boolean
 )

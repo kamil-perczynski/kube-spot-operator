@@ -22,6 +22,8 @@ fun readKubeClientProps(json: JsonObject): KubeClientProps {
     caCertPath = json.getString("caCertPath"),
     tokenPath = json.getString("tokenPath"),
     jwksEndpoint = json.getString("jwksEndpoint"),
+    openIdConfigurationEndpoint = json.getString("openIdConfigurationEndpoint"),
+    externalJwksUri = json.getString("externalJwksUri"),
     sslTrustAll = json.getBoolean("sslTrustAll", false)
   )
 }

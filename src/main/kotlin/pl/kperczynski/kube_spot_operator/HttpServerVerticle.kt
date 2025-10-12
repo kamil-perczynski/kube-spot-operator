@@ -82,6 +82,32 @@ class HttpServerVerticle(
         }
     }
 
+    router.get("/.well-known/openid-configuration").handler {
+      kubeClient.fetchOpenIdConfiguration()
+        .onSuccess { openidConfiguration ->
+
+          openidConfiguration.put("jwks_uri", kubeClientProps.externalJwksUri)
+
+          it.response()
+            .setStatusCode(HttpResponseStatus.OK.code())
+            .putHeader(CONTENT_TYPE, APPLICATION_JSON)
+            .end(openidConfiguration.toString())
+        }
+        .onFailure { err ->
+          log.error("Failed to fetch: {}", err.message, err)
+
+          it.response()
+            .setStatusCode(500)
+            .putHeader(CONTENT_TYPE, APPLICATION_JSON)
+            .end(
+              JsonObject()
+                .put("error", "Failed to fetch JWKS")
+                .put("details", err.message)
+                .toString()
+            )
+        }
+    }
+
     return server
       .requestHandler(router)
       .listen(httpProps.port)

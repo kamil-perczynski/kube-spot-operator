@@ -22,7 +22,7 @@ class KubeClient(
   companion object : Slf4j()
 
   fun fetchJwks(): Future<String> {
-    log.debug("Fetching JWKS from Kubernetes API at {}", props.jwksEndpoint)
+    log.debug("Fetching GET {}", props.jwksEndpoint)
 
     return readToken()
       .compose { token ->
@@ -49,6 +49,37 @@ class KubeClient(
       }
       .compose { body ->
         Future.succeededFuture(body.toString(Charsets.UTF_8))
+      }
+  }
+
+  fun fetchOpenIdConfiguration(): Future<JsonObject> {
+    log.debug("Fetching GET {}", props.openIdConfigurationEndpoint)
+
+    return readToken()
+      .compose { token ->
+        httpClient
+          .request(HttpMethod.GET, props.openIdConfigurationEndpoint)
+          .compose { req ->
+            req.putHeader(HttpHeaders.AUTHORIZATION, "Bearer $token")
+            req.idleTimeout(5000L)
+            req.send()
+          }
+      }
+      .compose { res ->
+        if (HttpStatusClass.valueOf(res.statusCode()) == HttpStatusClass.SUCCESS) {
+          return@compose res.body()
+        }
+
+        res.body().compose {
+          Future.failedFuture(
+            KubeClientException(
+              "Failed to fetch ${res.request().uri}. Status: ${res.statusCode()}, Body: ${it.toString(Charsets.UTF_8)}"
+            )
+          )
+        }
+      }
+      .compose { body ->
+        Future.succeededFuture(JsonObject(body.toString(Charsets.UTF_8)))
       }
   }
 
