@@ -1,8 +1,8 @@
 package pl.kperczynski.kube_spot_operator
 
+import io.netty.handler.codec.http.HttpResponseStatus
 import io.vertx.core.Future
 import io.vertx.core.VerticleBase
-import io.vertx.core.http.HttpHeaders.AUTHORIZATION
 import io.vertx.core.http.HttpHeaders.CONTENT_TYPE
 import io.vertx.core.http.HttpServer
 import io.vertx.core.json.JsonArray
@@ -34,6 +34,7 @@ class HttpServerVerticle(
 
     router.get("/").handler { ctx ->
       ctx.response()
+        .setStatusCode(HttpResponseStatus.OK.code())
         .putHeader(CONTENT_TYPE, APPLICATION_JSON)
         .end(
           JsonObject()
@@ -50,6 +51,7 @@ class HttpServerVerticle(
 
     router.get("/actuator/health").handler { ctx ->
       ctx.response()
+        .setStatusCode(HttpResponseStatus.OK.code())
         .putHeader(CONTENT_TYPE, APPLICATION_JSON)
         .end(
           JsonObject()
@@ -62,6 +64,7 @@ class HttpServerVerticle(
       kubeClient.fetchJwks()
         .onSuccess { jwks ->
           it.response()
+            .setStatusCode(HttpResponseStatus.OK.code())
             .putHeader(CONTENT_TYPE, APPLICATION_JSON)
             .end(jwks)
         }
