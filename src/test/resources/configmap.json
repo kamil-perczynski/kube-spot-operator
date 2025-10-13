@@ -4,8 +4,8 @@
   },
   "kube": {
     "apiOrigin": "http://127.0.0.1:29024",
-    "tokenPath": "./.kube/token",
-    "caCertPath": "./.kube/ca.crt",
+    "tokenPath": "./test-kube/token",
+    "caCertPath": "./test-kube/ca.crt",
     "jwksEndpoint": "/openid/v1/jwks",
     "openIdConfigurationEndpoint": "/.well-known/openid-configuration",
     "externalJwksUri": "https://kubernetes.default.svc.k8s.kperczynski.click/openid/v1/jwks",
