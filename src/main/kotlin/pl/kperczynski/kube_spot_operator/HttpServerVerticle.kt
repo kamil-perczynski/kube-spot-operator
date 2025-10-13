@@ -1,10 +1,11 @@
 package pl.kperczynski.kube_spot_operator
 
-import io.netty.handler.codec.http.HttpResponseStatus
+import io.netty.handler.codec.http.HttpResponseStatus.*
 import io.vertx.core.Future
 import io.vertx.core.VerticleBase
 import io.vertx.core.http.HttpHeaders.CONTENT_TYPE
 import io.vertx.core.http.HttpServer
+import io.vertx.core.json.Json
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.Router
@@ -30,11 +31,12 @@ class HttpServerVerticle(
   override fun start(): Future<*> {
     this.server = vertx.createHttpServer()
     this.router = Router.router(vertx)
-    this.kubeClient = KubeClient(kubeHttpClient(vertx, kubeClientProps, log), vertx, kubeClientProps)
+
+    this.kubeClient = KubeClient(kubeHttpClient(vertx, kubeClientProps), vertx, kubeClientProps)
 
     router.get("/").handler { ctx ->
       ctx.response()
-        .setStatusCode(HttpResponseStatus.OK.code())
+        .setStatusCode(OK.code())
         .putHeader(CONTENT_TYPE, APPLICATION_JSON)
         .end(
           JsonObject()
@@ -43,7 +45,9 @@ class HttpServerVerticle(
             .put(
               "routes", JsonArray()
                 .plus("/actuator/health")
+                .plus("/.well-known/openid-configuration")
                 .plus("/openid/v1/jwks")
+                .plus("/api/nodes")
             )
             .toString()
         )
@@ -51,7 +55,7 @@ class HttpServerVerticle(
 
     router.get("/actuator/health").handler { ctx ->
       ctx.response()
-        .setStatusCode(HttpResponseStatus.OK.code())
+        .setStatusCode(OK.code())
         .putHeader(CONTENT_TYPE, APPLICATION_JSON)
         .end(
           JsonObject()
@@ -64,7 +68,7 @@ class HttpServerVerticle(
       kubeClient.fetchJwks()
         .onSuccess { jwks ->
           it.response()
-            .setStatusCode(HttpResponseStatus.OK.code())
+            .setStatusCode(OK.code())
             .putHeader(CONTENT_TYPE, APPLICATION_JSON)
             .end(jwks)
         }
@@ -82,6 +86,28 @@ class HttpServerVerticle(
         }
     }
 
+    router.get("/api/nodes").handler {
+      kubeClient.listNodes()
+        .onSuccess { nodes ->
+          it.response()
+            .setStatusCode(OK.code())
+            .putHeader(CONTENT_TYPE, APPLICATION_JSON)
+            .end(Json.encode(nodes))
+        }
+        .onFailure { err ->
+          log.error("Failed to list nodes: {}", err.message, err)
+          it.response()
+            .setStatusCode(500)
+            .putHeader(CONTENT_TYPE, APPLICATION_JSON)
+            .end(
+              JsonObject()
+                .put("error", "Failed to list nodes")
+                .put("details", err.message)
+                .toString()
+            )
+        }
+    }
+
     router.get("/.well-known/openid-configuration").handler {
       kubeClient.fetchOpenIdConfiguration()
         .onSuccess { openidConfiguration ->
@@ -92,7 +118,7 @@ class HttpServerVerticle(
           )
 
           it.response()
-            .setStatusCode(HttpResponseStatus.OK.code())
+            .setStatusCode(OK.code())
             .putHeader(CONTENT_TYPE, APPLICATION_JSON)
             .end(openidConfiguration.toString())
         }

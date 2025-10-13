@@ -9,7 +9,7 @@ data class ConfigMap(
   val httpServer: HttpServerProps
 )
 
-fun readConfigMap(jsonObject: JsonObject): ConfigMap {
+fun parseConfigMap(jsonObject: JsonObject): ConfigMap {
   val kubeClient = readKubeClientProps(jsonObject.getJsonObject("kube"))
   val httpServer = readHttpServerProps(jsonObject.getJsonObject("server"))
 
