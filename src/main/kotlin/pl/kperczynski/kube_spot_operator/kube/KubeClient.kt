@@ -4,10 +4,12 @@ import io.kubernetes.client.openapi.models.V1Node
 import io.kubernetes.client.openapi.models.V1NodeList
 import io.netty.handler.codec.http.HttpStatusClass
 import io.vertx.core.Future
+import io.vertx.core.Handler
 import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.http.HttpClient
 import io.vertx.core.http.HttpClientOptions
+import io.vertx.core.http.HttpClientRequest
 import io.vertx.core.http.HttpClientResponse
 import io.vertx.core.http.HttpHeaders
 import io.vertx.core.http.HttpMethod
@@ -25,34 +27,22 @@ class KubeClient(
   private val props: KubeClientProps
 ) {
 
-  fun fetchJwks(): Future<String> {
+  fun fetchJwks(): Future<JsonObject> {
     log.debug("Fetching GET {}", props.jwksEndpoint)
 
     return readToken()
       .compose { token ->
         httpClient
           .request(HttpMethod.GET, props.jwksEndpoint)
+          .onSuccess(preconfigureRequest())
           .compose { req ->
             req.putHeader(HttpHeaders.AUTHORIZATION, "Bearer $token")
-            req.idleTimeout(5000L)
             req.send()
           }
       }
-      .compose { res ->
-        if (HttpStatusClass.valueOf(res.statusCode()) == HttpStatusClass.SUCCESS) {
-          return@compose res.body()
-        }
-
-        res.body().compose {
-          Future.failedFuture(
-            KubeClientException(
-              "Failed to fetch ${res.request().uri}. Status: ${res.statusCode()}, Body: ${it.toString(Charsets.UTF_8)}"
-            )
-          )
-        }
-      }
+      .compose { handleResponseErrors(it) }
       .compose { body ->
-        Future.succeededFuture(body.toString(Charsets.UTF_8))
+        Future.succeededFuture(JsonObject(body.toString(Charsets.UTF_8)))
       }
   }
 
@@ -63,9 +53,9 @@ class KubeClient(
       .compose { token ->
         httpClient
           .request(HttpMethod.GET, props.openIdConfigurationEndpoint)
+          .onSuccess(preconfigureRequest())
           .compose { req ->
             req.putHeader(HttpHeaders.AUTHORIZATION, "Bearer $token")
-            req.idleTimeout(5000L)
             req.send()
           }
       }
@@ -86,9 +76,9 @@ class KubeClient(
       .compose { token ->
         httpClient
           .request(HttpMethod.GET, "/api/v1/nodes")
+          .onSuccess(preconfigureRequest())
           .compose { req ->
             req.putHeader(HttpHeaders.AUTHORIZATION, "Bearer $token")
-            req.idleTimeout(5000L)
             req.send()
           }
           .compose { handleResponseErrors(it) }
@@ -106,10 +96,10 @@ class KubeClient(
       .compose { token ->
         httpClient
           .request(HttpMethod.PATCH, "/api/v1/nodes/$nodeId")
+          .onSuccess(preconfigureRequest())
           .compose { req ->
             req.putHeader(HttpHeaders.AUTHORIZATION, "Bearer $token")
             req.putHeader(HttpHeaders.CONTENT_TYPE, "application/strategic-merge-patch+json")
-            req.idleTimeout(5000L)
             req.send(Buffer.buffer("{\"spec\":{\"unschedulable\":true}}"))
           }
           .compose { handleResponseErrors(it) }
@@ -124,6 +114,14 @@ class KubeClient(
             }
           }
       }
+  }
+
+}
+
+private fun preconfigureRequest(): Handler<in HttpClientRequest> {
+  return Handler {
+    log.info("Calling ${it.method} ${it.uri}")
+    it.idleTimeout(5000L)
   }
 }
 
