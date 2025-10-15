@@ -1,5 +1,6 @@
 package pl.kperczynski.kube_spot_operator.kube
 
+import io.vertx.core.Future
 import io.vertx.core.Vertx
 import io.vertx.junit5.VertxExtension
 import io.vertx.junit5.VertxTestContext
@@ -78,6 +79,29 @@ class KubeClientTest {
           )
         )
     }.onComplete({ ctx.completeNow() }, ctx::failNow)
+  }
+
+  @Test
+  fun testListNodesError(ctx: VertxTestContext) {
+    // given:
+    val stubFuture = kubeStubs.stubListNodesError()
+
+    // when:
+    val listNodes = stubFuture.compose { kubeClient.listNodes() }
+
+    // then:
+    listNodes
+      .onSuccess {
+        ctx.failNow(IllegalStateException("Expected failure but got success with $it"))
+      }
+      .recover { err ->
+        assertThat(err)
+          .isInstanceOf(KubeClientException::class.java)
+          .hasMessageContaining("Call GET /api/v1/nodes returned status=401")
+
+        Future.succeededFuture()
+      }
+      .onComplete({ ctx.completeNow() }, ctx::failNow)
   }
 
   @Test

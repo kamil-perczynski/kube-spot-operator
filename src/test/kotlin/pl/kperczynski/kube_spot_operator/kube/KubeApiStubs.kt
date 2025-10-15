@@ -25,6 +25,19 @@ class KubeApiStubs(private val vertx: Vertx, private val wiremock: WireMockServe
     }
   }
 
+  fun stubListNodesError(): Future<StubMapping> {
+    return vertx.fileSystem().readFile("./mocks/unauthorized-error.json").map { errorJson ->
+      wiremock.stubFor(
+        get("/api/v1/nodes").willReturn(
+          aResponse()
+            .withStatus(401)
+            .withHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
+            .withBody(errorJson.bytes)
+        )
+      )
+    }
+  }
+
   fun stubCordonNode(nodeId: String): Future<StubMapping> {
     return vertx.fileSystem().readFile("./mocks/cordon-node-result.json").map { nodesJson ->
       wiremock.stubFor(

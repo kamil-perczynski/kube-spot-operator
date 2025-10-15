@@ -28,8 +28,6 @@ class KubeClient(
 ) {
 
   fun fetchJwks(): Future<JsonObject> {
-    log.debug("Fetching GET {}", props.jwksEndpoint)
-
     return readToken()
       .compose { token ->
         httpClient
@@ -47,8 +45,6 @@ class KubeClient(
   }
 
   fun fetchOpenIdConfiguration(): Future<JsonObject> {
-    log.debug("Fetching GET {}", props.openIdConfigurationEndpoint)
-
     return readToken()
       .compose { token ->
         httpClient
@@ -70,8 +66,6 @@ class KubeClient(
   }
 
   fun listNodes(): Future<List<KubeNode>> {
-    log.debug("Listing nodes from the cluster")
-
     return readToken()
       .compose { token ->
         httpClient
@@ -90,8 +84,6 @@ class KubeClient(
   }
 
   fun cordonNode(nodeId: String): Future<CordonResult> {
-    log.debug("Draining node {}", nodeId)
-
     return readToken()
       .compose { token ->
         httpClient
@@ -147,10 +139,16 @@ private fun handleResponseErrors(res: HttpClientResponse): Future<Buffer> {
   }
 
   return res.body().compose {
+    log.info(
+      "Call {} {} returned status={} body={}",
+      res.request().method,
+      res.request().uri,
+      res.statusCode(),
+      it.toString(Charsets.UTF_8)
+    )
+
     Future.failedFuture(
-      KubeClientException(
-        "Failed to fetch ${res.request().uri}. Status: ${res.statusCode()}, Body: ${it.toString(Charsets.UTF_8)}"
-      )
+      KubeClientException("Call ${res.request().method} ${res.request().uri} returned status=${res.statusCode()}")
     )
   }
 }
