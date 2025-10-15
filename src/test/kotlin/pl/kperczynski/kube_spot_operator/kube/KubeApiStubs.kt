@@ -2,9 +2,7 @@ package pl.kperczynski.kube_spot_operator.kube
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
-import com.github.tomakehurst.wiremock.client.WireMock.aResponse
-import com.github.tomakehurst.wiremock.client.WireMock.equalTo
-import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.*
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import io.vertx.core.Future
 import io.vertx.core.Vertx
@@ -23,6 +21,22 @@ class KubeApiStubs(private val vertx: Vertx, private val wiremock: WireMockServe
         )
       )
     }
+  }
+
+  fun stubListPodsOnNode(nodeName: String): Future<StubMapping> {
+    return vertx.fileSystem().readFile("./mocks/node-ip-10-46-102-33-eu-north-1-compute-internal-pods.json")
+      .map { podsJson ->
+        wiremock.stubFor(
+          get(urlPathEqualTo("/api/v1/pods"))
+            .withQueryParam("fieldSelector", equalTo("spec.nodeName=$nodeName"))
+            .willReturn(
+              aResponse()
+                .withStatus(200)
+                .withHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
+                .withBody(podsJson.bytes)
+            )
+        )
+      }
   }
 
   fun stubListNodesError(): Future<StubMapping> {

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import pl.kperczynski.kube_spot_operator.bootstrapConfig
 import pl.kperczynski.kube_spot_operator.config.ConfigMap
+import pl.kperczynski.kube_spot_operator.domain.KubePod
 
 @ExtendWith(VertxExtension::class)
 class KubeClientTest {
@@ -78,6 +79,174 @@ class KubeClientTest {
             emptyList<String>()
           )
         )
+    }.onComplete({ ctx.completeNow() }, ctx::failNow)
+  }
+
+  @Test
+  fun testListNodePods(ctx: VertxTestContext) {
+    // given:
+    val nodeName = "ip-10-46-102-33.eu-north-1.compute.internal"
+    val stubFuture = kubeStubs.stubListPodsOnNode(nodeName)
+
+    // when:
+    val listNodePods = stubFuture.compose { kubeClient.listNodePods(nodeName) }
+
+    // then:
+    listNodePods.onSuccess { pods ->
+      assertThat(pods).containsExactly(
+        KubePod(
+          name = "argocd-application-controller-0",
+          namespace = "argocd",
+          phase = "Running",
+          ownerKind = "StatefulSet",
+          ownerName = "argocd-application-controller",
+          hasEmptyDirVolume = true
+        ),
+        KubePod(
+          name = "argocd-applicationset-controller-549cbdb686-8h59z",
+          namespace = "argocd",
+          phase = "Running",
+          ownerKind = "ReplicaSet",
+          ownerName = "argocd-applicationset-controller-549cbdb686",
+          hasEmptyDirVolume = true
+        ),
+        KubePod(
+          name = "argocd-dex-server-78c775dd69-gg4hd",
+          namespace = "argocd",
+          phase = "Running",
+          ownerKind = "ReplicaSet",
+          ownerName = "argocd-dex-server-78c775dd69",
+          hasEmptyDirVolume = true
+        ),
+        KubePod(
+          name = "argocd-notifications-controller-7d87d96cc4-f7mpd",
+          namespace = "argocd",
+          phase = "Running",
+          ownerKind = "ReplicaSet",
+          ownerName = "argocd-notifications-controller-7d87d96cc4",
+          hasEmptyDirVolume = false
+        ),
+        KubePod(
+          name = "argocd-repo-server-5c4b778556-xjrm5",
+          namespace = "argocd",
+          phase = "Running",
+          ownerKind = "ReplicaSet",
+          ownerName = "argocd-repo-server-5c4b778556",
+          hasEmptyDirVolume = true
+        ),
+        KubePod(
+          name = "argocd-server-57897b89bd-h4gjv",
+          namespace = "argocd",
+          phase = "Running",
+          ownerKind = "ReplicaSet",
+          ownerName = "argocd-server-57897b89bd",
+          hasEmptyDirVolume = true
+        ),
+        KubePod(
+          name = "cert-mgr-dev-cert-manager-59664d9678-x8kbt",
+          namespace = "infra-dev",
+          phase = "Running",
+          ownerKind = "ReplicaSet",
+          ownerName = "cert-mgr-dev-cert-manager-59664d9678",
+          hasEmptyDirVolume = false
+        ),
+        KubePod(
+          name = "cert-mgr-dev-cert-manager-webhook-589c8f79d7-b7sv2",
+          namespace = "infra-dev",
+          phase = "Running",
+          ownerKind = "ReplicaSet",
+          ownerName = "cert-mgr-dev-cert-manager-webhook-589c8f79d7",
+          hasEmptyDirVolume = false
+        ),
+        KubePod(
+          name = "grafana-monitoring-dev-alloy-logs-tmc5k",
+          namespace = "infra-dev",
+          phase = "Running",
+          ownerKind = "DaemonSet",
+          ownerName = "grafana-monitoring-dev-alloy-logs",
+          hasEmptyDirVolume = false
+        ),
+        KubePod(
+          name = "grafana-monitoring-dev-alloy-metrics-0",
+          namespace = "infra-dev",
+          phase = "Running",
+          ownerKind = "StatefulSet",
+          ownerName = "grafana-monitoring-dev-alloy-metrics",
+          hasEmptyDirVolume = false
+        ),
+        KubePod(
+          name = "grafana-monitoring-dev-alloy-receiver-p4w2l",
+          namespace = "infra-dev",
+          phase = "Running",
+          ownerKind = "DaemonSet",
+          ownerName = "grafana-monitoring-dev-alloy-receiver",
+          hasEmptyDirVolume = false
+        ),
+        KubePod(
+          name = "grafana-monitoring-dev-alloy-singleton-55658b9c6b-b6nzl",
+          namespace = "infra-dev",
+          phase = "Running",
+          ownerKind = "ReplicaSet",
+          ownerName = "grafana-monitoring-dev-alloy-singleton-55658b9c6b",
+          hasEmptyDirVolume = false
+        ),
+        KubePod(
+          name = "grafana-monitoring-dev-kube-state-metrics-67f8bbc785-tw8jg",
+          namespace = "infra-dev",
+          phase = "Running",
+          ownerKind = "ReplicaSet",
+          ownerName = "grafana-monitoring-dev-kube-state-metrics-67f8bbc785",
+          hasEmptyDirVolume = false
+        ),
+        KubePod(
+          name = "grafana-monitoring-dev-node-exporter-rdr8k",
+          namespace = "infra-dev",
+          phase = "Running",
+          ownerKind = "DaemonSet",
+          ownerName = "grafana-monitoring-dev-node-exporter",
+          hasEmptyDirVolume = false
+        ),
+        KubePod(
+          name = "kube-spot-operator-6gds2",
+          namespace = "infra-dev",
+          phase = "Running",
+          ownerKind = "DaemonSet",
+          ownerName = "kube-spot-operator",
+          hasEmptyDirVolume = false
+        ),
+        KubePod(
+          name = "coredns-64fd4b4794-5hwdm",
+          namespace = "kube-system",
+          phase = "Running",
+          ownerKind = "ReplicaSet",
+          ownerName = "coredns-64fd4b4794",
+          hasEmptyDirVolume = false
+        ),
+        KubePod(
+          name = "local-path-provisioner-774c6665dc-4c8zr",
+          namespace = "kube-system",
+          phase = "Running",
+          ownerKind = "ReplicaSet",
+          ownerName = "local-path-provisioner-774c6665dc",
+          hasEmptyDirVolume = false
+        ),
+        KubePod(
+          name = "metrics-server-7bfffcd44-6nn6v",
+          namespace = "kube-system",
+          phase = "Running",
+          ownerKind = "ReplicaSet",
+          ownerName = "metrics-server-7bfffcd44",
+          hasEmptyDirVolume = true
+        ),
+        KubePod(
+          name = "svclb-traefik-7aa1c6d0-rfdl8",
+          namespace = "kube-system",
+          phase = "Running",
+          ownerKind = "DaemonSet",
+          ownerName = "svclb-traefik-7aa1c6d0",
+          hasEmptyDirVolume = false
+        )
+      )
     }.onComplete({ ctx.completeNow() }, ctx::failNow)
   }
 

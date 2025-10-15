@@ -1,4 +1,4 @@
-package pl.kperczynski.kube_spot_operator.domain
+package pl.kperczynski.kube_spot_operator.libs
 
 import io.vertx.core.eventbus.ReplyException
 import io.vertx.core.eventbus.ReplyFailure

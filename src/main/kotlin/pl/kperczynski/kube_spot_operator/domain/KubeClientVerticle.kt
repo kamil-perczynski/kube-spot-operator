@@ -10,9 +10,11 @@ import org.slf4j.Logger
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.GET_JWKS
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.GET_OPENID_CONFIG
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.LIST_KUBE_NODES
+import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.LIST_NODE_PODS
 import pl.kperczynski.kube_spot_operator.kube.KubeClient
 import pl.kperczynski.kube_spot_operator.kube.KubeClientProps
 import pl.kperczynski.kube_spot_operator.kube.kubeHttpClient
+import pl.kperczynski.kube_spot_operator.libs.RecipientException
 import pl.kperczynski.kube_spot_operator.logging.Slf4j
 
 class KubeClientVerticle(private val kubeClientProps: KubeClientProps) : VerticleBase() {
@@ -58,10 +60,21 @@ class KubeClientVerticle(private val kubeClientProps: KubeClientProps) : Verticl
         .onFailure(consumerErrorHandler(msg, log))
     }
 
+    val listNodePodsConsumer = bus.localConsumer<ListPodsInput>(LIST_NODE_PODS) { msg ->
+      val input = msg.body()
+
+      log.debug("Received request for listing pods on node: {}", input.nodeId)
+
+      kubeClient.listNodePods(input.nodeId)
+        .onSuccess { podsList -> msg.reply(podsList) }
+        .onFailure(consumerErrorHandler(msg, log))
+    }
+
     return Future.all(
       getJwksConsumer.completion(),
       getOpenIdConfigurationConsumer.completion(),
-      listKubernetesNodesConsumer.completion()
+      listKubernetesNodesConsumer.completion(),
+      listNodePodsConsumer.completion()
     )
   }
 }
@@ -77,7 +90,7 @@ private fun toOpenIdConfiguration(kubeOpenIdConfig: JsonObject, externalJwksUri:
   return openidConfiguration
 }
 
-private fun consumerErrorHandler(msg: Message<Any>, log: Logger): Handler<in Throwable> {
+private fun <T : Any> consumerErrorHandler(msg: Message<T>, log: Logger): Handler<in Throwable> {
   return Handler { ex ->
     log.error("Operation failed", ex)
     msg.reply(RecipientException("Recipient ${msg.address()} operation failed", ex))

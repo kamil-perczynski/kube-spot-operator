@@ -1,7 +1,7 @@
 package pl.kperczynski.kube_spot_operator
 
 import io.netty.handler.codec.http.HttpResponseStatus
-import io.netty.handler.codec.http.HttpResponseStatus.*
+import io.netty.handler.codec.http.HttpResponseStatus.OK
 import io.vertx.core.Future
 import io.vertx.core.VerticleBase
 import io.vertx.core.http.HttpHeaders.CONTENT_TYPE
@@ -16,9 +16,11 @@ import org.slf4j.Logger
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.GET_JWKS
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.GET_OPENID_CONFIG
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.LIST_KUBE_NODES
+import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.LIST_NODE_PODS
 import pl.kperczynski.kube_spot_operator.http.HttpServerProps
 import pl.kperczynski.kube_spot_operator.kube.KubeClient
 import pl.kperczynski.kube_spot_operator.kube.KubeClientProps
+import pl.kperczynski.kube_spot_operator.domain.ListPodsInput
 import pl.kperczynski.kube_spot_operator.kube.kubeHttpClient
 import pl.kperczynski.kube_spot_operator.logging.Slf4j
 
@@ -53,6 +55,7 @@ class HttpServerVerticle(
               .plus("/.well-known/openid-configuration")
               .plus("/openid/v1/jwks")
               .plus("/api/nodes")
+              .plus("/api/pods?nodeId={nodeId}")
           )
       )
     }
@@ -76,6 +79,20 @@ class HttpServerVerticle(
         .request<JsonObject>(LIST_KUBE_NODES, null)
         .onSuccess { msg -> jsonResponse(it.response(), msg.body()) }
         .onFailure { err -> handleError(it, err, log) }
+    }
+
+    router.get("/api/pods").handler { ctx ->
+      val nodeId = ctx.queryParam("nodeId").firstOrNull()
+
+      if (nodeId.isNullOrBlank()) {
+        handleError(ctx, IllegalArgumentException("Missing nodeId query parameter"), log)
+        return@handler
+      }
+
+      vertx.eventBus()
+        .request<JsonObject>(LIST_NODE_PODS, ListPodsInput(nodeId = nodeId))
+        .onSuccess { msg -> jsonResponse(ctx.response(), msg.body()) }
+        .onFailure { err -> handleError(ctx, err, log) }
     }
 
     router.get("/.well-known/openid-configuration").handler {
