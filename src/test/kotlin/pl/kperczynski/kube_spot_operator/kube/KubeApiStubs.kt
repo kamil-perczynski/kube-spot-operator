@@ -1,10 +1,7 @@
 package pl.kperczynski.kube_spot_operator.kube
 
 import com.github.tomakehurst.wiremock.WireMockServer
-import com.github.tomakehurst.wiremock.client.MappingBuilder
-import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.*
-import com.github.tomakehurst.wiremock.stubbing.Scenario
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import io.vertx.core.Future
 import io.vertx.core.Vertx
@@ -73,7 +70,7 @@ class KubeApiStubs(private val vertx: Vertx, private val wiremock: WireMockServe
   fun stubCordonNode(nodeId: String): Future<StubMapping> {
     return vertx.fileSystem().readFile("./mocks/cordon-node-result.json").map { nodesJson ->
       wiremock.stubFor(
-        WireMock.patch("/api/v1/nodes/$nodeId")
+        patch("/api/v1/nodes/$nodeId")
           .withHeader("Content-Type", equalTo("application/strategic-merge-patch+json"))
           .willReturn(
             aResponse()
@@ -104,5 +101,3 @@ class KubeApiStubs(private val vertx: Vertx, private val wiremock: WireMockServe
   }
 
 }
-
-typealias MappingFn = (MappingBuilder) -> MappingBuilder

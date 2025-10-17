@@ -1,0 +1,118 @@
+package pl.kperczynski.kube_spot_operator.ec2
+
+import io.netty.handler.codec.http.HttpStatusClass
+import io.vertx.core.Future
+import io.vertx.core.Vertx
+import io.vertx.core.http.HttpClient
+import io.vertx.core.http.HttpClientOptions
+import io.vertx.core.http.HttpMethod
+import io.vertx.core.json.JsonObject
+import org.slf4j.LoggerFactory
+import pl.kperczynski.kube_spot_operator.http.handleResponseErrors
+import pl.kperczynski.kube_spot_operator.http.preconfigureRequest
+import java.net.URI
+import java.time.Duration
+import java.time.Instant
+
+private val log = LoggerFactory.getLogger(EC2MetadataClient::class.java)
+
+private const val X_AWS_EC2_METADATA_TOKEN = "X-aws-ec2-metadata-token"
+
+class EC2MetadataClient(
+  private val httpClient: HttpClient,
+  private val ec2MetadataProps: EC2MetadataProps
+) {
+
+  private lateinit var validTo: Instant
+  private lateinit var cachedToken: String
+
+  fun fetchInstanceAction(): Future<InstanceAction> {
+    return acquireToken()
+      .compose { token ->
+        httpClient.request(HttpMethod.GET, "/latest/meta-data/spot/instance-action")
+          .onSuccess(preconfigureRequest(log))
+          .compose { req ->
+            req.putHeader(X_AWS_EC2_METADATA_TOKEN, token)
+            req.send()
+          }
+      }
+      .compose { res ->
+        if (res.statusCode() == 404) {
+          return@compose Future.succeededFuture(null)
+        }
+        handleResponseErrors(res, log)
+      }
+      .map { body ->
+        if (body == null) {
+          return@map null
+        }
+
+        val json = JsonObject(body.toString(Charsets.UTF_8))
+
+        InstanceAction(
+          action = json.getString("action"),
+          time = json.getString("time")
+        )
+      }
+  }
+
+  private fun acquireToken(): Future<String> {
+    if (!this::validTo.isInitialized) {
+      log.info("EC2 metadata token is missing, fetching a new one")
+      return fetchToken()
+    }
+
+    val tokenMinutesTtl = Duration.between(Instant.now(), validTo).toMinutes()
+
+    if (tokenMinutesTtl < 3) {
+      log.info("EC2 metadata token is expiring soon (in {} minutes), fetching a new one", tokenMinutesTtl)
+      return fetchToken()
+    }
+
+    return Future.succeededFuture(cachedToken)
+  }
+
+  private fun fetchToken(): Future<String> {
+    return httpClient.request(HttpMethod.PUT, "/latest/api/token")
+      .onSuccess(preconfigureRequest(log))
+      .compose { req ->
+        req.putHeader("X-aws-ec2-metadata-token-ttl-seconds", ec2MetadataProps.ttlSeconds.toString())
+        req.send()
+      }
+      .compose { res ->
+        if (HttpStatusClass.valueOf(res.statusCode()) != HttpStatusClass.SUCCESS) {
+          return@compose Future.failedFuture(IllegalStateException("Failed to fetch EC2 metadata token"))
+        }
+
+        res.body().map { it.toString(Charsets.UTF_8) }
+      }
+      .onSuccess { token ->
+        this.cachedToken = token
+        this.validTo = Instant.now().plusSeconds(ec2MetadataProps.ttlSeconds)
+      }
+      .onFailure {
+        this.cachedToken = ""
+        this.validTo = Instant.EPOCH
+      }
+  }
+}
+
+fun ec2MetadataHttpClient(vertx: Vertx, ec2MetadataProps: EC2MetadataProps): HttpClient {
+  val origin = URI.create(ec2MetadataProps.apiOrigin)
+
+  val schemePort = when (origin.scheme) {
+    "https" -> 443
+    "http" -> 80
+    else -> null
+  }
+
+  val port = origin.port.takeIf { it != -1 } ?: schemePort ?: 443
+
+  val opts = HttpClientOptions()
+    .setSsl(origin.scheme == "https")
+    .setDefaultHost(origin.host)
+    .setDefaultPort(port)
+    .setKeepAlive(true)
+
+  return vertx.createHttpClient(opts)
+}

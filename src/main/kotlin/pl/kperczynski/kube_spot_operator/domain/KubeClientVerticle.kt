@@ -7,6 +7,7 @@ import io.vertx.core.eventbus.Message
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import org.slf4j.Logger
+import pl.kperczynski.kube_spot_operator.domain.EventIds.NODE_TERMINATION_SCHEDULED
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.DRAIN_KUBE_NODE
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.GET_JWKS
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.GET_OPENID_CONFIG
@@ -26,7 +27,6 @@ class KubeClientVerticle(private val kubeClientProps: KubeClientProps) : Verticl
   private lateinit var drainNodeService: DrainNodeService
 
   override fun start(): Future<*> {
-    log.info("Registering KubeClientVerticle instance ${this.deploymentID()}")
     this.kubeClient = KubeClient(kubeHttpClient(vertx, kubeClientProps), vertx, kubeClientProps)
     this.drainNodeService = DrainNodeService(kubeClient, vertx)
 
@@ -83,12 +83,23 @@ class KubeClientVerticle(private val kubeClientProps: KubeClientProps) : Verticl
         .onFailure(consumerErrorHandler(msg, log))
     }
 
+    val nodeTerminationConsumer = bus.localConsumer<NodeTerminationScheduledInput>(NODE_TERMINATION_SCHEDULED) { msg ->
+      val input = msg.body()
+
+      log.debug("Received node termination scheduled event for node: {}. Draining the node...", input.nodeId)
+
+      drainNodeService.drainNode(input.nodeId)
+        .onSuccess { log.info("Node {} drained successfully after termination scheduled event", input.nodeId) }
+        .onFailure(consumerErrorHandler(msg, log))
+    }
+
     return Future.all(
       getJwksConsumer.completion(),
       getOpenIdConfigurationConsumer.completion(),
       listKubernetesNodesConsumer.completion(),
       listNodePodsConsumer.completion(),
-      drainKubeNodeConsumer.completion()
+      drainKubeNodeConsumer.completion(),
+      nodeTerminationConsumer.completion()
     )
   }
 }

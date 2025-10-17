@@ -1,19 +1,32 @@
 package pl.kperczynski.kube_spot_operator.config
 
 import io.vertx.core.json.JsonObject
+import pl.kperczynski.kube_spot_operator.ec2.EC2MetadataProps
 import pl.kperczynski.kube_spot_operator.http.HttpServerProps
 import pl.kperczynski.kube_spot_operator.kube.KubeClientProps
 
 data class ConfigMap(
   val kubeClient: KubeClientProps,
-  val httpServer: HttpServerProps
+  val httpServer: HttpServerProps,
+  val ec2: EC2MetadataProps
 )
 
 fun parseConfigMap(jsonObject: JsonObject): ConfigMap {
   val kubeClient = readKubeClientProps(jsonObject.getJsonObject("kube"))
   val httpServer = readHttpServerProps(jsonObject.getJsonObject("server"))
+  val ec2 = readEc2MetadataProps(jsonObject.getJsonObject("ec2"))
 
-  return ConfigMap(kubeClient, httpServer)
+  return ConfigMap(kubeClient, httpServer, ec2)
+}
+
+fun readEc2MetadataProps(json: JsonObject): EC2MetadataProps {
+  return EC2MetadataProps(
+    timerInterval = json.getLong("timerInterval", 30_000L),
+    enabled = json.getBoolean("enabled", true),
+    currentNode = resolveEnv(json.getString("currentNode")),
+    apiOrigin = json.getString("apiOrigin"),
+    ttlSeconds = json.getLong("ttlSeconds")
+  )
 }
 
 fun readKubeClientProps(json: JsonObject): KubeClientProps {
@@ -32,4 +45,15 @@ fun readHttpServerProps(json: JsonObject): HttpServerProps {
   return HttpServerProps(
     port = json.getInteger("port")
   )
+}
+
+
+fun resolveEnv(input: String): String {
+  if (!input.startsWith("\$env:")) {
+    return input
+  }
+
+  val envVar = input.removePrefix("\$env:")
+  val value = System.getenv(envVar) ?: throw IllegalArgumentException("Environment variable '$envVar' is not set")
+  return value
 }
