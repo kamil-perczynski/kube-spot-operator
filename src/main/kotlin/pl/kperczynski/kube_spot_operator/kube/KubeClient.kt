@@ -9,8 +9,7 @@ import io.vertx.core.Handler
 import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.http.*
-import io.vertx.core.http.HttpMethod.GET
-import io.vertx.core.http.HttpMethod.PATCH
+import io.vertx.core.http.HttpMethod.*
 import io.vertx.core.json.Json
 import io.vertx.core.json.JsonObject
 import io.vertx.core.net.PemTrustOptions
@@ -82,28 +81,59 @@ class KubeClient(
       }
   }
 
-  fun cordonNode(nodeId: String): Future<CordonResult> {
+  fun cordonNode(nodeName: String): Future<CordonResult> {
+    return readToken().compose { token ->
+      httpClient
+        .request(PATCH, "/api/v1/nodes/$nodeName")
+        .onSuccess(preconfigureRequest())
+        .compose { req ->
+          req.putHeader(HttpHeaders.AUTHORIZATION, "Bearer $token")
+          req.putHeader(HttpHeaders.CONTENT_TYPE, "application/strategic-merge-patch+json")
+          req.send(Buffer.buffer("{\"spec\":{\"unschedulable\":true}}"))
+        }
+        .compose { handleResponseErrors(it) }
+        .map { body ->
+          val node = Json.decodeValue(body, V1Node::class.java)
+          val cordonTaint = node.spec?.taints?.find { taint -> taint.key == "node.kubernetes.io/unschedulable" }
+
+          if (cordonTaint == null) {
+            CordonResult.CORDONED
+          } else {
+            CordonResult.ALREADY_CORDONED
+          }
+        }
+    }
+  }
+
+  fun evictPod(podName: String, namespace: String): Future<Void> {
     return readToken()
       .compose { token ->
+        val uri = UriTemplate.of("/api/v1/namespaces/{namespace}/pods/{pod}/eviction").expandToString(
+          Variables.variables()
+            .set("namespace", namespace)
+            .set("pod", podName)
+        )
+
         httpClient
-          .request(PATCH, "/api/v1/nodes/$nodeId")
+          .request(POST, uri)
           .onSuccess(preconfigureRequest())
           .compose { req ->
             req.putHeader(HttpHeaders.AUTHORIZATION, "Bearer $token")
-            req.putHeader(HttpHeaders.CONTENT_TYPE, "application/strategic-merge-patch+json")
-            req.send(Buffer.buffer("{\"spec\":{\"unschedulable\":true}}"))
+            req.putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+            req.send(
+              JsonObject()
+                .put("apiVersion", "policy/v1")
+                .put("kind", "Eviction")
+                .put(
+                  "metadata", JsonObject()
+                    .put("name", podName)
+                    .put("namespace", namespace)
+                )
+                .encode()
+            )
           }
           .compose { handleResponseErrors(it) }
-          .map { body ->
-            val node = Json.decodeValue(body, V1Node::class.java)
-            val cordonTaint = node.spec?.taints?.find { taint -> taint.key == "node.kubernetes.io/unschedulable" }
-
-            if (cordonTaint == null) {
-              CordonResult.CORDONED
-            } else {
-              CordonResult.ALREADY_CORDONED
-            }
-          }
+          .mapEmpty()
       }
   }
 
@@ -152,7 +182,7 @@ fun toPodsList(podList: V1PodList): List<KubePod> {
 
 private fun preconfigureRequest(): Handler<in HttpClientRequest> {
   return Handler {
-    log.info("Calling ${it.method} ${it.uri}")
+    log.debug("Calling {} {}", it.method, it.uri)
     it.idleTimeout(5000L)
   }
 }
