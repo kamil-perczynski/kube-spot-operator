@@ -1,12 +1,14 @@
 package pl.kperczynski.kube_spot_operator.kube
 
 import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.MappingBuilder
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.*
+import com.github.tomakehurst.wiremock.stubbing.Scenario
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import io.vertx.core.Future
 import io.vertx.core.Vertx
-import io.vertx.core.http.HttpHeaders
+import io.vertx.core.http.HttpHeaders.CONTENT_TYPE
 
 class KubeApiStubs(private val vertx: Vertx, private val wiremock: WireMockServer) {
 
@@ -16,26 +18,42 @@ class KubeApiStubs(private val vertx: Vertx, private val wiremock: WireMockServe
         get("/api/v1/nodes").willReturn(
           aResponse()
             .withStatus(200)
-            .withHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
+            .withHeader(CONTENT_TYPE.toString(), "application/json")
             .withBody(nodesJson.bytes)
         )
       )
     }
   }
 
-  fun stubListPodsOnNode(nodeName: String): Future<StubMapping> {
+  fun stubListPodsOnNode(nodeName: String, customizer: MappingFn = { it }): Future<StubMapping> {
     return vertx.fileSystem().readFile("./mocks/node-ip-10-46-102-33-eu-north-1-compute-internal-pods.json")
       .map { podsJson ->
-        wiremock.stubFor(
-          get(urlPathEqualTo("/api/v1/pods"))
-            .withQueryParam("fieldSelector", equalTo("spec.nodeName=$nodeName"))
-            .willReturn(
-              aResponse()
-                .withStatus(200)
-                .withHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
-                .withBody(podsJson.bytes)
-            )
-        )
+        val mapping = get(urlPathEqualTo("/api/v1/pods"))
+          .withQueryParam("fieldSelector", equalTo("spec.nodeName=$nodeName"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader(CONTENT_TYPE.toString(), "application/json")
+              .withBody(podsJson.bytes)
+          )
+
+        wiremock.stubFor(customizer(mapping))
+      }
+  }
+
+  fun stubListAllEvictedPodsOnNode(nodeName: String, customizer: MappingFn = { it }): Future<StubMapping> {
+    return vertx.fileSystem().readFile("./mocks/node-ip-10-46-102-33-eu-north-1-compute-internal-all-evicted-pods.json")
+      .map { podsJson ->
+        val mapping = get(urlPathEqualTo("/api/v1/pods"))
+          .withQueryParam("fieldSelector", equalTo("spec.nodeName=$nodeName"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader(CONTENT_TYPE.toString(), "application/json")
+              .withBody(podsJson.bytes)
+          )
+
+        wiremock.stubFor(customizer(mapping))
       }
   }
 
@@ -45,7 +63,7 @@ class KubeApiStubs(private val vertx: Vertx, private val wiremock: WireMockServe
         get("/api/v1/nodes").willReturn(
           aResponse()
             .withStatus(401)
-            .withHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
+            .withHeader(CONTENT_TYPE.toString(), "application/json")
             .withBody(errorJson.bytes)
         )
       )
@@ -60,7 +78,21 @@ class KubeApiStubs(private val vertx: Vertx, private val wiremock: WireMockServe
           .willReturn(
             aResponse()
               .withStatus(200)
-              .withHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
+              .withHeader(CONTENT_TYPE.toString(), "application/json")
+              .withBody(nodesJson.bytes)
+          )
+      )
+    }
+  }
+
+  fun stubEvictPod(podName: String, namespace: String): Future<StubMapping> {
+    return vertx.fileSystem().readFile("./mocks/pod-evicted-result.json").map { nodesJson ->
+      wiremock.stubFor(
+        post(urlPathEqualTo("/api/v1/namespaces/$namespace/pods/$podName/eviction"))
+          .willReturn(
+            aResponse()
+              .withStatus(201)
+              .withHeader(CONTENT_TYPE.toString(), "application/json")
               .withBody(nodesJson.bytes)
           )
       )
@@ -72,3 +104,5 @@ class KubeApiStubs(private val vertx: Vertx, private val wiremock: WireMockServe
   }
 
 }
+
+typealias MappingFn = (MappingBuilder) -> MappingBuilder

@@ -1,6 +1,8 @@
 package pl.kperczynski.kube_spot_operator.kube
 
+import com.github.tomakehurst.wiremock.stubbing.Scenario
 import io.vertx.core.Future
+import io.vertx.core.Promise
 import io.vertx.core.Vertx
 import io.vertx.junit5.VertxExtension
 import io.vertx.junit5.VertxTestContext
@@ -12,6 +14,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import pl.kperczynski.kube_spot_operator.bootstrapConfig
 import pl.kperczynski.kube_spot_operator.config.ConfigMap
+import pl.kperczynski.kube_spot_operator.domain.DrainNodeService
 import pl.kperczynski.kube_spot_operator.domain.KubePod
 
 @ExtendWith(VertxExtension::class)
@@ -19,6 +22,7 @@ class KubeClientTest {
 
   companion object {
 
+    private lateinit var drainNodeService: DrainNodeService
     private lateinit var configmap: ConfigMap
     private lateinit var kubeStubs: KubeApiStubs
     private lateinit var kubeClient: KubeClient
@@ -40,6 +44,7 @@ class KubeClientTest {
             vertx,
             configmap.kubeClient
           )
+          drainNodeService = DrainNodeService(kubeClient, vertx)
         }
         .onComplete(ctx.succeedingThenComplete())
     }
@@ -274,12 +279,12 @@ class KubeClientTest {
   }
 
   @Test
-  fun testDrainNode(ctx: VertxTestContext) {
-    val nodeId = "ip-10-46-102-33.eu-north-1.compute.internal"
+  fun testCordonNode(ctx: VertxTestContext) {
+    val nodeName = "ip-10-46-102-33.eu-north-1.compute.internal"
 
-    val stubCordonNode = kubeStubs.stubCordonNode(nodeId)
+    val stubCordonNode = kubeStubs.stubCordonNode(nodeName)
 
-    val cordonNode = stubCordonNode.compose { kubeClient.cordonNode(nodeId) }
+    val cordonNode = stubCordonNode.compose { kubeClient.cordonNode(nodeName) }
 
     cordonNode
       .onSuccess { json ->
@@ -287,4 +292,97 @@ class KubeClientTest {
       }
       .onComplete({ ctx.completeNow() }, ctx::failNow)
   }
+
+  @Test
+  fun testEvictPod(ctx: VertxTestContext) {
+    // given:
+    val podName = "kroplowa-fe-lp-847dbc77f6-gwvgc"
+    val namespace = "apps-prod"
+
+    val stubEvictPod = kubeStubs.stubEvictPod(podName, namespace)
+
+    // when:
+    val evictPod = stubEvictPod.compose { kubeClient.evictPod(podName, namespace) }
+
+    // then:
+    evictPod.onComplete({ ctx.completeNow() }, ctx::failNow)
+  }
+
+  @Test
+  fun testDrainNode(ctx: VertxTestContext) {
+    // given:
+    val nodeName = "ip-10-46-103-245.eu-north-1.compute.internal"
+
+    val stubs = kubeStubs
+      .stubListPodsOnNode(nodeName) {
+        it.inScenario("Drain node")
+          .whenScenarioStateIs(Scenario.STARTED)
+          .willSetStateTo("All pods evicted")
+      }
+      .compose { kubeStubs.stubCordonNode(nodeName) }
+      .compose { kubeStubs.stubEvictPod("argocd-application-controller-0", "argocd") }
+      .compose { kubeStubs.stubEvictPod("argocd-applicationset-controller-549cbdb686-8h59z", "argocd") }
+      .compose { kubeStubs.stubEvictPod("argocd-dex-server-78c775dd69-gg4hd", "argocd") }
+      .compose { kubeStubs.stubEvictPod("argocd-notifications-controller-7d87d96cc4-f7mpd", "argocd") }
+      .compose { kubeStubs.stubEvictPod("argocd-repo-server-5c4b778556-xjrm5", "argocd") }
+      .compose { kubeStubs.stubEvictPod("argocd-server-57897b89bd-h4gjv", "argocd") }
+      .compose { kubeStubs.stubEvictPod("cert-mgr-dev-cert-manager-59664d9678-x8kbt", "infra-dev") }
+      .compose { kubeStubs.stubEvictPod("cert-mgr-dev-cert-manager-webhook-589c8f79d7-b7sv2", "infra-dev") }
+      .compose { kubeStubs.stubEvictPod("grafana-monitoring-dev-alloy-metrics-0", "infra-dev") }
+      .compose { kubeStubs.stubEvictPod("grafana-monitoring-dev-alloy-singleton-55658b9c6b-b6nzl", "infra-dev") }
+      .compose { kubeStubs.stubEvictPod("grafana-monitoring-dev-kube-state-metrics-67f8bbc785-tw8jg", "infra-dev") }
+      .compose { kubeStubs.stubEvictPod("coredns-64fd4b4794-5hwdm", "kube-system") }
+      .compose { kubeStubs.stubEvictPod("local-path-provisioner-774c6665dc-4c8zr", "kube-system") }
+      .compose { kubeStubs.stubEvictPod("metrics-server-7bfffcd44-6nn6v", "kube-system") }
+      .compose {
+        kubeStubs.stubListAllEvictedPodsOnNode(nodeName) {
+          it.inScenario("Drain node")
+            .whenScenarioStateIs("All pods evicted")
+        }
+      }
+
+    // when & then:
+    stubs
+      .compose { drainNodeService.drainNode(nodeName) }
+      .onComplete({ ctx.completeNow() }, ctx::failNow)
+  }
+
+  @Test
+  fun testRetryDecorator(vertx: Vertx, ctx: VertxTestContext) {
+    // given:
+    val decor = retryDecorator<Void>("TestOp", vertx, arrayOf(20, 50, 100))
+
+    // when & then:
+    decor {
+      Future.failedFuture(IllegalArgumentException("Sth bad happened"))
+    }.onComplete(
+      { ctx.failNow("Should fail") },
+      { ctx.completeNow() }
+    )
+  }
+}
+
+fun <T> retryDecorator(
+  opName: String,
+  vertx: Vertx,
+  times: Array<Long> = arrayOf(3000L, 5000L, 10000L),
+): (() -> Future<T>) -> Future<T> {
+  return { fn ->
+    var res = fn()
+
+    for ((index, lng) in times.withIndex()) {
+      res = res.recover { err ->
+        println("$opName fail #${index + 1}: ${err.message}, ${lng / 1000}s to retry...")
+        setTimeout(vertx, lng).compose { fn() }
+      }
+    }
+
+    res
+  }
+}
+
+fun setTimeout(vertx: Vertx, delayMs: Long): Future<Void> {
+  val promise = Promise.promise<Void>()
+  vertx.setTimer(delayMs) { promise.complete() }
+  return promise.future()
 }
