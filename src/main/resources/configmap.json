@@ -10,5 +10,10 @@
     "openIdConfigurationEndpoint": "/.well-known/openid-configuration",
     "externalJwksUri": "https://kubernetes.default.svc.k8s.kperczynski.click/openid/v1/jwks",
     "sslTrustAll": false
+  },
+  "ec2": {
+    "currentNode": "$env:CURRENT_KUBERNETES_NODE",
+    "apiOrigin": "http://169.254.169.254",
+    "ttlSeconds": 21600
   }
 }

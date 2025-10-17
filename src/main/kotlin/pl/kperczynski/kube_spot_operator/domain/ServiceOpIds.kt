@@ -7,3 +7,7 @@ object ServiceOpIds {
   const val LIST_NODE_PODS = "service.op.listNodePods"
   const val DRAIN_KUBE_NODE = "service.op.drainKubeNode"
 }
+
+object EventIds {
+  const val NODE_TERMINATION_SCHEDULED = "event.nodeTerminationScheduled"
+}

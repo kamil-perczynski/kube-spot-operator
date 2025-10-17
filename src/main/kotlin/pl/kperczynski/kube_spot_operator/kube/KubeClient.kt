@@ -3,12 +3,12 @@ package pl.kperczynski.kube_spot_operator.kube
 import io.kubernetes.client.openapi.models.V1Node
 import io.kubernetes.client.openapi.models.V1NodeList
 import io.kubernetes.client.openapi.models.V1PodList
-import io.netty.handler.codec.http.HttpStatusClass
 import io.vertx.core.Future
-import io.vertx.core.Handler
 import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
-import io.vertx.core.http.*
+import io.vertx.core.http.HttpClient
+import io.vertx.core.http.HttpClientOptions
+import io.vertx.core.http.HttpHeaders
 import io.vertx.core.http.HttpMethod.*
 import io.vertx.core.json.Json
 import io.vertx.core.json.JsonObject
@@ -18,6 +18,8 @@ import io.vertx.uritemplate.Variables
 import org.slf4j.LoggerFactory
 import pl.kperczynski.kube_spot_operator.domain.KubeNode
 import pl.kperczynski.kube_spot_operator.domain.KubePod
+import pl.kperczynski.kube_spot_operator.http.handleResponseErrors
+import pl.kperczynski.kube_spot_operator.http.preconfigureRequest
 import java.net.URI
 
 private val log = LoggerFactory.getLogger(KubeClient::class.java)
@@ -35,13 +37,13 @@ class KubeClient(
       .compose { token ->
         httpClient
           .request(GET, props.jwksEndpoint)
-          .onSuccess(preconfigureRequest())
+          .onSuccess(preconfigureRequest(log))
           .compose { req ->
             req.putHeader(HttpHeaders.AUTHORIZATION, "Bearer $token")
             req.send()
           }
       }
-      .compose { handleResponseErrors(it) }
+      .compose { handleResponseErrors(it, log) }
       .compose { body ->
         Future.succeededFuture(JsonObject(body.toString(Charsets.UTF_8)))
       }
@@ -52,13 +54,13 @@ class KubeClient(
       .compose { token ->
         httpClient
           .request(GET, props.openIdConfigurationEndpoint)
-          .onSuccess(preconfigureRequest())
+          .onSuccess(preconfigureRequest(log))
           .compose { req ->
             req.putHeader(HttpHeaders.AUTHORIZATION, "Bearer $token")
             req.send()
           }
       }
-      .compose { handleResponseErrors(it) }
+      .compose { handleResponseErrors(it, log) }
       .compose { body -> Future.succeededFuture(JsonObject(body.toString(Charsets.UTF_8))) }
   }
 
@@ -68,12 +70,12 @@ class KubeClient(
       .compose { token ->
         httpClient
           .request(GET, "/api/v1/nodes")
-          .onSuccess(preconfigureRequest())
+          .onSuccess(preconfigureRequest(log))
           .compose { req ->
             req.putHeader(HttpHeaders.AUTHORIZATION, "Bearer $token")
             req.send()
           }
-          .compose { handleResponseErrors(it) }
+          .compose { handleResponseErrors(it, log) }
           .map { body ->
             val listNode = Json.decodeValue(body, V1NodeList::class.java)
             toNodesList(listNode)
@@ -85,13 +87,13 @@ class KubeClient(
     return readToken().compose { token ->
       httpClient
         .request(PATCH, "/api/v1/nodes/$nodeName")
-        .onSuccess(preconfigureRequest())
+        .onSuccess(preconfigureRequest(log))
         .compose { req ->
           req.putHeader(HttpHeaders.AUTHORIZATION, "Bearer $token")
           req.putHeader(HttpHeaders.CONTENT_TYPE, "application/strategic-merge-patch+json")
           req.send(Buffer.buffer("{\"spec\":{\"unschedulable\":true}}"))
         }
-        .compose { handleResponseErrors(it) }
+        .compose { handleResponseErrors(it, log) }
         .map { body ->
           val node = Json.decodeValue(body, V1Node::class.java)
           val cordonTaint = node.spec?.taints?.find { taint -> taint.key == "node.kubernetes.io/unschedulable" }
@@ -116,7 +118,7 @@ class KubeClient(
 
         httpClient
           .request(POST, uri)
-          .onSuccess(preconfigureRequest())
+          .onSuccess(preconfigureRequest(log))
           .compose { req ->
             req.putHeader(HttpHeaders.AUTHORIZATION, "Bearer $token")
             req.putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
@@ -132,7 +134,7 @@ class KubeClient(
                 .encode()
             )
           }
-          .compose { handleResponseErrors(it) }
+          .compose { handleResponseErrors(it, log) }
           .mapEmpty()
       }
   }
@@ -145,12 +147,12 @@ class KubeClient(
 
       httpClient
         .request(GET, uri)
-        .onSuccess(preconfigureRequest())
+        .onSuccess(preconfigureRequest(log))
         .compose { req ->
           req.putHeader(HttpHeaders.AUTHORIZATION, "Bearer $token")
           req.send()
         }
-        .compose { handleResponseErrors(it) }
+        .compose { handleResponseErrors(it, log) }
         .map { body ->
           val podList = Json.decodeValue(body, V1PodList::class.java)
           toPodsList(podList)
@@ -180,13 +182,6 @@ fun toPodsList(podList: V1PodList): List<KubePod> {
   }
 }
 
-private fun preconfigureRequest(): Handler<in HttpClientRequest> {
-  return Handler {
-    log.debug("Calling {} {}", it.method, it.uri)
-    it.idleTimeout(5000L)
-  }
-}
-
 private fun toNodesList(listNode: V1NodeList): List<KubeNode> {
   return listNode.items
     .filter { node -> node.metadata?.name != null }
@@ -201,26 +196,6 @@ private fun toNodesList(listNode: V1NodeList): List<KubeNode> {
         taints = taints
       )
     }
-}
-
-private fun handleResponseErrors(res: HttpClientResponse): Future<Buffer> {
-  if (HttpStatusClass.valueOf(res.statusCode()) == HttpStatusClass.SUCCESS) {
-    return res.body()
-  }
-
-  return res.body().compose {
-    log.info(
-      "Call {} {} returned status={} body={}",
-      res.request().method,
-      res.request().uri,
-      res.statusCode(),
-      it.toString(Charsets.UTF_8)
-    )
-
-    Future.failedFuture(
-      KubeClientException("Call ${res.request().method} ${res.request().uri} returned status=${res.statusCode()}")
-    )
-  }
 }
 
 fun kubeHttpClient(vertx: Vertx, kubeClientProps: KubeClientProps): HttpClient {

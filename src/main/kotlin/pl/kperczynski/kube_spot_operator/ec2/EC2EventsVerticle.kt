@@ -1,0 +1,65 @@
+package pl.kperczynski.kube_spot_operator.ec2
+
+import io.vertx.core.Future
+import io.vertx.core.VerticleBase
+import pl.kperczynski.kube_spot_operator.domain.EventIds
+import pl.kperczynski.kube_spot_operator.domain.NodeTerminationScheduledInput
+import pl.kperczynski.kube_spot_operator.logging.Slf4j
+import java.time.Duration
+
+class EC2EventsVerticle(private val ec2MetadataProps: EC2MetadataProps) : VerticleBase() {
+
+  companion object : Slf4j()
+
+  private lateinit var ec2MetadataClient: EC2MetadataClient
+
+  private var terminationScheduled: Boolean = false
+
+  override fun start(): Future<*> {
+    this.ec2MetadataClient = EC2MetadataClient(
+      httpClient = ec2MetadataHttpClient(vertx, ec2MetadataProps),
+      ec2MetadataProps = ec2MetadataProps
+    )
+
+    if (ec2MetadataProps.enabled) {
+      val interval = Duration.ofMillis(ec2MetadataProps.timerInterval)
+
+      log.info("Starting EC2 metadata checking for termination every: {}", interval.toSeconds())
+      vertx.setPeriodic(ec2MetadataProps.timerInterval) {
+        observeSpotTermination()
+      }
+    }
+
+    return Future.succeededFuture<Void>()
+  }
+
+  private fun observeSpotTermination() {
+    ec2MetadataClient.fetchInstanceAction().onSuccess { instanceAction ->
+      if (terminationScheduled) {
+        log.trace("Termination already scheduled for current ec2 instance node={}", ec2MetadataProps.currentNode)
+        return@onSuccess
+      }
+
+      if (instanceAction == null) {
+        log.trace("No scheduled actions for current ec2 instance node={}", ec2MetadataProps.currentNode)
+        return@onSuccess
+      }
+
+      if (instanceAction.action == "terminate" || instanceAction.action == "stop") {
+        log.info(
+          "Current node={} is scheduled to {}: {}",
+          ec2MetadataProps.currentNode,
+          instanceAction.action,
+          instanceAction
+        )
+
+        vertx.eventBus().send(
+          EventIds.NODE_TERMINATION_SCHEDULED,
+          NodeTerminationScheduledInput(nodeId = ec2MetadataProps.currentNode)
+        )
+        terminationScheduled = true
+      }
+    }
+  }
+
+}
