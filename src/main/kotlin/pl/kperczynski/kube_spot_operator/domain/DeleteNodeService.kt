@@ -47,7 +47,7 @@ fun findNodesToDelete(nodes: List<KubeNode>): List<ScheduledNodeDelete> {
   for (node in nodesToDelete) {
     val indexOf = nodes.indexOf(node)
 
-    if (indexOf < nodes.size) {
+    if (indexOf < nodes.lastIndex) {
       val scheduledNodeDelete = findExecutingNodeFromIndex(indexOf, nodes, node)
 
       if (scheduledNodeDelete != null) {
@@ -68,7 +68,7 @@ fun findNodesToDelete(nodes: List<KubeNode>): List<ScheduledNodeDelete> {
 }
 
 private fun findExecutingNodeUpToIndex(indexOf: Int, nodes: List<KubeNode>, node: KubeNode): ScheduledNodeDelete? {
-  for (i in (indexOf - 1)..0) {
+  for (i in (indexOf - 1) downTo 0) {
     val candidateNode = nodes[i]
 
     if (isNodeReady(candidateNode)) {
