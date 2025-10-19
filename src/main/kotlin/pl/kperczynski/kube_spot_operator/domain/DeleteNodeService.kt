@@ -5,7 +5,10 @@ import pl.kperczynski.kube_spot_operator.config.KubeNodeProps
 import pl.kperczynski.kube_spot_operator.kube.KubeClient
 import pl.kperczynski.kube_spot_operator.logging.Slf4j
 
-class DeleteNodeService(private val kubeClient: KubeClient, private val kubeNodeProps: KubeNodeProps) {
+class DeleteNodeService(
+  private val kubeClient: KubeClient,
+  private val kubeNodeProps: KubeNodeProps
+) {
 
   companion object : Slf4j()
 
@@ -40,7 +43,7 @@ class DeleteNodeService(private val kubeClient: KubeClient, private val kubeNode
 }
 
 fun findNodesToDelete(nodes: List<KubeNode>): List<ScheduledNodeDelete> {
-  val nodesToDelete = nodes.filter { shouldNodeBeDeleted(it) }
+  val nodesToDelete = nodes.filter { isUnschedulableAndUnreachable(it) }
 
   val result = mutableListOf<ScheduledNodeDelete>()
 
@@ -98,7 +101,7 @@ private fun findExecutingNodeFromIndex(
   return null
 }
 
-fun shouldNodeBeDeleted(node: KubeNode): Boolean {
+fun isUnschedulableAndUnreachable(node: KubeNode): Boolean {
   return !isNodeReady(node) && node.taints.contains("node.kubernetes.io/unschedulable")
 }
 

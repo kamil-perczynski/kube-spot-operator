@@ -13,15 +13,11 @@ import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.CLEANUP_NODES
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.DRAIN_KUBE_NODE
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.GET_JWKS
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.GET_OPENID_CONFIG
-import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.LIST_KUBE_NODES
-import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.LIST_NODE_PODS
 import pl.kperczynski.kube_spot_operator.kube.KubeClient
 import pl.kperczynski.kube_spot_operator.kube.KubeClientProps
 import pl.kperczynski.kube_spot_operator.kube.kubeHttpClient
 import pl.kperczynski.kube_spot_operator.libs.RecipientException
 import pl.kperczynski.kube_spot_operator.logging.Slf4j
-
-private const val ONE_MINUTE = 60 * 1000L
 
 class KubeClientVerticle(
   private val kubeClientProps: KubeClientProps,
@@ -64,24 +60,6 @@ class KubeClientVerticle(
         .onFailure(consumerErrorHandler(msg, log))
     }
 
-    val listKubernetesNodesConsumer = bus.localConsumer(LIST_KUBE_NODES) { msg ->
-      log.debug("Received request for listing Kubernetes nodes")
-
-      kubeClient.listNodes()
-        .onSuccess { nodesList -> msg.reply(nodesList) }
-        .onFailure(consumerErrorHandler(msg, log))
-    }
-
-    val listNodePodsConsumer = bus.localConsumer<ListPodsInput>(LIST_NODE_PODS) { msg ->
-      val input = msg.body()
-
-      log.debug("Received request for listing pods on node: {}", input.nodeId)
-
-      kubeClient.listNodePods(input.nodeId)
-        .onSuccess { podsList -> msg.reply(podsList) }
-        .onFailure(consumerErrorHandler(msg, log))
-    }
-
     val drainKubeNodeConsumer = bus.localConsumer<DrainNodeInput>(DRAIN_KUBE_NODE) { msg ->
       val input = msg.body()
 
@@ -111,8 +89,6 @@ class KubeClientVerticle(
       listOf(
         getJwksConsumer.completion(),
         getOpenIdConfigurationConsumer.completion(),
-        listKubernetesNodesConsumer.completion(),
-        listNodePodsConsumer.completion(),
         drainKubeNodeConsumer.completion(),
         nodeTerminationConsumer.completion(),
         cleanupNodesConsumer.completion()

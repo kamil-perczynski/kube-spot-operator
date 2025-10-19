@@ -49,7 +49,8 @@ fun readKubeClientProps(json: JsonObject): KubeClientProps {
 
 fun readKubeNodeProps(json: JsonObject): KubeNodeProps {
   return KubeNodeProps(
-    currentNodeName = resolveEnv(json.getString("currentNodeName"))
+    currentNodeName = resolveEnv(json.getString("currentNodeName")),
+    enableAutomaticNodeCleanup = json.getBoolean("enableAutomaticNodeCleanup", true)
   )
 }
 
