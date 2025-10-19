@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import pl.kperczynski.kube_spot_operator.bootstrapConfig
 import pl.kperczynski.kube_spot_operator.config.ConfigMap
-import pl.kperczynski.kube_spot_operator.ec2.EC2MetadataClient
+import pl.kperczynski.kube_spot_operator.ec2.HttpEC2MetadataClient
 import pl.kperczynski.kube_spot_operator.ec2.InstanceAction
 import pl.kperczynski.kube_spot_operator.ec2.ec2MetadataHttpClient
 
@@ -21,7 +21,7 @@ class Ec2MetadataClientTest {
 
     private lateinit var configmap: ConfigMap
     private lateinit var ec2MetadataStubs: Ec2MetadataApiStubs
-    private lateinit var ec2MetadataClient: EC2MetadataClient
+    private lateinit var ec2MetadataClient: HttpEC2MetadataClient
 
     @BeforeAll
     @JvmStatic
@@ -35,7 +35,7 @@ class Ec2MetadataClientTest {
           ec2MetadataStubs = Ec2MetadataApiStubs(kubeWiremock.wiremock)
         }
         .onSuccess {
-          ec2MetadataClient = EC2MetadataClient(
+          ec2MetadataClient = HttpEC2MetadataClient(
             ec2MetadataHttpClient(vertx, configmap.ec2),
             configmap.ec2
           )

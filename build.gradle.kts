@@ -22,19 +22,19 @@ val vertxVersion = "5.0.4"
 val junitJupiterVersion = "5.9.1"
 
 val mainVerticleName = "pl.kperczynski.kube_spot_operator.MainVerticle"
-val launcherClassName = "io.vertx.launcher.application.VertxApplication"
 
 application {
-  mainClass.set(launcherClassName)
+  mainClass.set("pl.kperczynski.kube_spot_operator.KubeSpotOperatorApplicationKt")
 }
 
 dependencies {
   implementation(platform("io.vertx:vertx-stack-depchain:$vertxVersion"))
-  implementation("io.vertx:vertx-launcher-application")
   implementation("io.vertx:vertx-web-client")
   implementation("io.vertx:vertx-web")
   implementation("io.vertx:vertx-core")
   implementation("io.vertx:vertx-lang-kotlin")
+  implementation("io.vertx:vertx-micrometer-metrics")
+  implementation("io.micrometer:micrometer-registry-prometheus:1.15.5")
 
   implementation("org.slf4j:slf4j-api:2.0.17")
   implementation("ch.qos.logback:logback-classic:1.5.19")

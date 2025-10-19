@@ -3,7 +3,7 @@
     "port": 8080
   },
   "kubeNode": {
-    "currentNodeName": "$env:CURRENT_KUBERNETES_NODE"
+    "currentNodeName": "ip-10-46-101-78.eu-north-1.compute.internal"
   },
   "kube": {
     "apiOrigin": "https://kubernetes.default.svc:6443",

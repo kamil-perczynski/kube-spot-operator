@@ -12,6 +12,7 @@ import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
+import io.vertx.micrometer.PrometheusScrapingHandler
 import org.slf4j.Logger
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.GET_JWKS
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.GET_OPENID_CONFIG
@@ -42,9 +43,12 @@ class HttpServerVerticle(private val httpProps: HttpServerProps) : VerticleBase(
               .plus("/actuator/health")
               .plus("/.well-known/openid-configuration")
               .plus("/openid/v1/jwks")
+              .plus("/metrics")
           )
       )
     }
+
+    router.get("/metrics").handler(PrometheusScrapingHandler.create())
 
     router.get("/actuator/health").handler {
       jsonResponse(

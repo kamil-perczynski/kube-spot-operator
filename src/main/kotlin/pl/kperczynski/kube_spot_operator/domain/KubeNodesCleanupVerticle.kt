@@ -7,20 +7,21 @@ import pl.kperczynski.kube_spot_operator.config.KubeNodeProps
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.CLEANUP_NODES
 import pl.kperczynski.kube_spot_operator.kube.KubeClient
 import pl.kperczynski.kube_spot_operator.kube.KubeClientProps
-import pl.kperczynski.kube_spot_operator.kube.kubeHttpClient
 import pl.kperczynski.kube_spot_operator.logging.Slf4j
 
 private const val TWO_MINUTES = 2 * 60 * 1000L
 
-class KubeNodesCleanupVerticle(private val kubeClientProps: KubeClientProps, private val kubeNodeProps: KubeNodeProps) :
-  VerticleBase() {
+class KubeNodesCleanupVerticle(
+  private val kubeClientProps: KubeClientProps,
+  private val kubeNodeProps: KubeNodeProps
+) : VerticleBase() {
 
   companion object : Slf4j()
 
   private lateinit var kubeClient: KubeClient
 
   override fun start(): Future<*>? {
-    this.kubeClient = KubeClient(kubeHttpClient(vertx, kubeClientProps), vertx, kubeClientProps)
+    this.kubeClient = monitoredKubeClient(vertx, kubeClientProps)
 
     if (kubeNodeProps.enableAutomaticNodeCleanup) {
       log.info("Starting automatic node cleanup every {} ms", TWO_MINUTES)
