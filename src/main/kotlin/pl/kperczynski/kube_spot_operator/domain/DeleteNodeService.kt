@@ -9,16 +9,14 @@ class DeleteNodeService(private val kubeClient: KubeClient, private val kubeNode
 
   companion object : Slf4j()
 
-  fun cleanupNodes(): Future<Void> {
-    return kubeClient.listNodes().compose { allNodes ->
-      val deletesToExecute = findNodesToDelete(allNodes)
-        .filter { scheduledDelete -> scheduledDelete.executionerNode == kubeNodeProps.currentNodeName }
+  fun cleanupNodes(nodes: List<KubeNode>): Future<Void> {
+    val deletesToExecute = findNodesToDelete(nodes)
+      .filter { scheduledDelete -> scheduledDelete.executionerNode == kubeNodeProps.currentNodeName }
 
-      val nodesToDelete = deletesToExecute.map { it.nodeName }
-      log.info("Found nodes {} to be deleted node={}", nodesToDelete, kubeNodeProps.currentNodeName)
+    val nodesToDelete = deletesToExecute.map { it.nodeName }
+    log.info("Found nodes={} to be deleted by node={}", nodesToDelete, kubeNodeProps.currentNodeName)
 
-      executeDeletes(nodesToDelete)
-    }
+    return executeDeletes(nodesToDelete)
   }
 
   private fun executeDeletes(nodesToDelete: List<String>): Future<Void> {
@@ -100,7 +98,7 @@ private fun findExecutingNodeFromIndex(
   return null
 }
 
-private fun shouldNodeBeDeleted(node: KubeNode): Boolean {
+fun shouldNodeBeDeleted(node: KubeNode): Boolean {
   return !isNodeReady(node) && node.taints.contains("node.kubernetes.io/unschedulable")
 }
 

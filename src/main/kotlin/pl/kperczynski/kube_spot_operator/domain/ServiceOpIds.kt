@@ -6,6 +6,7 @@ object ServiceOpIds {
   const val LIST_KUBE_NODES = "service.op.listKubeNodes"
   const val LIST_NODE_PODS = "service.op.listNodePods"
   const val DRAIN_KUBE_NODE = "service.op.drainKubeNode"
+  const val CLEANUP_NODES = "service.op.cleanupNodes"
 }
 
 object EventIds {

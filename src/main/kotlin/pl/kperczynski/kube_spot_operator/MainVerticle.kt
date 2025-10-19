@@ -12,6 +12,7 @@ import io.vertx.core.json.jackson.DatabindCodec
 import pl.kperczynski.kube_spot_operator.config.ConfigMap
 import pl.kperczynski.kube_spot_operator.config.parseConfigMap
 import pl.kperczynski.kube_spot_operator.domain.KubeClientVerticle
+import pl.kperczynski.kube_spot_operator.domain.NodesCleanupVerticle
 import pl.kperczynski.kube_spot_operator.ec2.EC2EventsVerticle
 import pl.kperczynski.kube_spot_operator.libs.DirectMessageCodec
 import pl.kperczynski.kube_spot_operator.logging.Slf4j
@@ -38,6 +39,12 @@ class MainVerticle() : VerticleBase() {
           )
           .compose {
             vertx.deployVerticle(
+              Supplier<Deployable> { NodesCleanupVerticle(configMap.kubeClient) },
+              DeploymentOptions().setInstances(1)
+            )
+          }
+          .compose {
+            vertx.deployVerticle(
               Supplier<Deployable> { EC2EventsVerticle(configMap.ec2, configMap.kubeNode) },
               DeploymentOptions().setInstances(1)
             )
@@ -45,7 +52,7 @@ class MainVerticle() : VerticleBase() {
           .compose {
             vertx.deployVerticle(
               Supplier<Deployable> { HttpServerVerticle(configMap.httpServer, configMap.kubeClient) },
-              DeploymentOptions().setInstances(1)
+              DeploymentOptions().setInstances(2)
             )
           }
       }

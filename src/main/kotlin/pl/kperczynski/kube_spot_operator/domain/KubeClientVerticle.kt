@@ -9,6 +9,7 @@ import io.vertx.core.json.JsonObject
 import org.slf4j.Logger
 import pl.kperczynski.kube_spot_operator.config.KubeNodeProps
 import pl.kperczynski.kube_spot_operator.domain.EventIds.NODE_TERMINATION_SCHEDULED
+import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.CLEANUP_NODES
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.DRAIN_KUBE_NODE
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.GET_JWKS
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.GET_OPENID_CONFIG
@@ -101,17 +102,21 @@ class KubeClientVerticle(
         .onFailure(consumerErrorHandler(msg, log))
     }
 
-    vertx.setPeriodic(ONE_MINUTE) {
-      deleteNodeService.cleanupNodes()
+    val cleanupNodesConsumer = bus.localConsumer<CleanupNodesInput>(CLEANUP_NODES) { msg ->
+      val input = msg.body()
+      deleteNodeService.cleanupNodes(nodes = input.nodes)
     }
 
-    return Future.all(
-      getJwksConsumer.completion(),
-      getOpenIdConfigurationConsumer.completion(),
-      listKubernetesNodesConsumer.completion(),
-      listNodePodsConsumer.completion(),
-      drainKubeNodeConsumer.completion(),
-      nodeTerminationConsumer.completion()
+    return Future.all<Any>(
+      listOf(
+        getJwksConsumer.completion(),
+        getOpenIdConfigurationConsumer.completion(),
+        listKubernetesNodesConsumer.completion(),
+        listNodePodsConsumer.completion(),
+        drainKubeNodeConsumer.completion(),
+        nodeTerminationConsumer.completion(),
+        cleanupNodesConsumer.completion()
+      )
     )
   }
 
