@@ -2,6 +2,7 @@ package pl.kperczynski.kube_spot_operator
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import io.vertx.core.Deployable
 import io.vertx.core.DeploymentOptions
 import io.vertx.core.Future
@@ -68,6 +69,8 @@ fun bootstrapConfig(vertx: Vertx): Future<ConfigMap> {
 
   val objectMapper = DatabindCodec.mapper()
   objectMapper.registerModule(JavaTimeModule())
+  objectMapper.registerKotlinModule()
+
   objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
   objectMapper.configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, false)
 

@@ -1,9 +1,10 @@
-package pl.kperczynski.kube_spot_operator.kube
+package pl.kperczynski.kube_spot_operator.domain
 
 import io.vertx.core.Future
 import io.vertx.core.json.JsonObject
-import pl.kperczynski.kube_spot_operator.domain.KubeNode
-import pl.kperczynski.kube_spot_operator.domain.KubePod
+import pl.kperczynski.kube_spot_operator.domain.model.KubeNode
+import pl.kperczynski.kube_spot_operator.domain.model.KubePod
+import pl.kperczynski.kube_spot_operator.kube.CordonResult
 
 interface KubeClient {
 

@@ -1,4 +1,4 @@
-package pl.kperczynski.kube_spot_operator.domain
+package pl.kperczynski.kube_spot_operator.domain.model
 
 data class KubeNode(
   val name: String,

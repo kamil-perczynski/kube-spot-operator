@@ -4,7 +4,7 @@ import io.vertx.core.Future
 import io.vertx.core.VerticleBase
 import pl.kperczynski.kube_spot_operator.config.KubeNodeProps
 import pl.kperczynski.kube_spot_operator.domain.EventIds
-import pl.kperczynski.kube_spot_operator.domain.NodeTerminationScheduledInput
+import pl.kperczynski.kube_spot_operator.domain.model.NodeTerminationScheduledInput
 import pl.kperczynski.kube_spot_operator.logging.Slf4j
 import java.time.Duration
 
@@ -25,7 +25,7 @@ class EC2EventsVerticle(
     if (ec2MetadataProps.enabled) {
       val interval = Duration.ofMillis(ec2MetadataProps.timerInterval)
 
-      log.info("Starting EC2 metadata checking for termination every: {}", interval.toSeconds())
+      log.info("Starting EC2 metadata checking for termination every: {}s", interval.toSeconds())
       vertx.setPeriodic(ec2MetadataProps.timerInterval) {
         observeSpotTermination()
       }

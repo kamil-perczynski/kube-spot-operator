@@ -14,7 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import pl.kperczynski.kube_spot_operator.bootstrapConfig
 import pl.kperczynski.kube_spot_operator.config.ConfigMap
 import pl.kperczynski.kube_spot_operator.domain.DrainNodeService
-import pl.kperczynski.kube_spot_operator.domain.KubePod
+import pl.kperczynski.kube_spot_operator.domain.model.KubePod
 import pl.kperczynski.kube_spot_operator.domain.kubeHttpClient
 
 @ExtendWith(VertxExtension::class)

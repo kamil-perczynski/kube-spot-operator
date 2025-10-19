@@ -6,7 +6,6 @@ import io.vertx.core.http.HttpClientOptions
 import io.vertx.core.net.PemTrustOptions
 import io.vertx.micrometer.backends.BackendRegistries
 import pl.kperczynski.kube_spot_operator.kube.HttpKubeClient
-import pl.kperczynski.kube_spot_operator.kube.KubeClient
 import pl.kperczynski.kube_spot_operator.kube.KubeClientProps
 import pl.kperczynski.kube_spot_operator.kube.MonitoredKubeClient
 import java.net.URI

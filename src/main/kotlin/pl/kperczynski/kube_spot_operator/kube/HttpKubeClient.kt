@@ -1,8 +1,5 @@
 package pl.kperczynski.kube_spot_operator.kube
 
-import io.kubernetes.client.openapi.models.V1Node
-import io.kubernetes.client.openapi.models.V1NodeList
-import io.kubernetes.client.openapi.models.V1PodList
 import io.vertx.core.Future
 import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
@@ -15,8 +12,12 @@ import io.vertx.uritemplate.UriTemplate
 import io.vertx.uritemplate.Variables
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
-import pl.kperczynski.kube_spot_operator.domain.KubeNode
-import pl.kperczynski.kube_spot_operator.domain.KubePod
+import pl.kperczynski.kube_spot_operator.domain.KubeClient
+import pl.kperczynski.kube_spot_operator.domain.model.KubeNode
+import pl.kperczynski.kube_spot_operator.domain.model.KubePod
+import pl.kperczynski.kube_spot_operator.kube.model.KubeNodeDto
+import pl.kperczynski.kube_spot_operator.kube.model.KubeNodeListingDto
+import pl.kperczynski.kube_spot_operator.kube.model.KubePodListingDto
 import pl.kperczynski.kube_spot_operator.libs.handleResponseErrors
 import pl.kperczynski.kube_spot_operator.libs.preconfigureRequest
 
@@ -75,7 +76,7 @@ class HttpKubeClient(
           }
           .compose { handleResponseErrors(it, log) }
           .map { body ->
-            val listNode = Json.decodeValue(body, V1NodeList::class.java)
+            val listNode = Json.decodeValue(body, KubeNodeListingDto::class.java)
             toNodesList(listNode).sortedBy { it.name }
           }
       }
@@ -93,8 +94,8 @@ class HttpKubeClient(
         }
         .compose { handleResponseErrors(it, log) }
         .map { body ->
-          val node = Json.decodeValue(body, V1Node::class.java)
-          val cordonTaint = node.spec?.taints?.find { taint -> taint.key == "node.kubernetes.io/unschedulable" }
+          val node = Json.decodeValue(body, KubeNodeDto::class.java)
+          val cordonTaint = node.spec.taints.find { taint -> taint.key == "node.kubernetes.io/unschedulable" }
 
           if (cordonTaint == null) {
             CordonResult.CORDONED
@@ -152,7 +153,7 @@ class HttpKubeClient(
         }
         .compose { handleResponseErrors(it, log) }
         .map { body ->
-          val podList = Json.decodeValue(body, V1PodList::class.java)
+          val podList = Json.decodeValue(body, KubePodListingDto::class.java)
           toPodsList(podList)
         }
     }
@@ -179,31 +180,30 @@ class HttpKubeClient(
 
 }
 
-fun toPodsList(podList: V1PodList): List<KubePod> {
+fun toPodsList(podList: KubePodListingDto): List<KubePod> {
   return podList.items.map { item ->
-    val hasEmptyDirVolume = item.spec?.volumes?.any { vol -> vol.emptyDir != null } ?: false
+    val hasEmptyDirVolume = item.spec.volumes.any { vol -> vol.emptyDir != null }
 
     KubePod(
-      name = item.metadata?.name ?: UNKNOWN,
-      namespace = item.metadata?.namespace ?: UNKNOWN,
-      phase = item.status?.phase ?: UNKNOWN,
-      ownerKind = item.metadata?.ownerReferences?.firstOrNull()?.kind ?: UNKNOWN,
-      ownerName = item.metadata?.ownerReferences?.firstOrNull()?.name ?: UNKNOWN,
+      name = item.metadata.name,
+      namespace = item.metadata.namespace,
+      phase = item.status.phase,
+      ownerKind = item.metadata.ownerReferences?.firstOrNull()?.kind ?: UNKNOWN,
+      ownerName = item.metadata.ownerReferences?.firstOrNull()?.name ?: UNKNOWN,
       hasEmptyDirVolume = hasEmptyDirVolume
     )
   }
 }
 
-private fun toNodesList(listNode: V1NodeList): List<KubeNode> {
+private fun toNodesList(listNode: KubeNodeListingDto): List<KubeNode> {
   return listNode.items
-    .filter { node -> node.metadata?.name != null }
     .map { node ->
-      val conditions = node.status?.conditions ?: emptyList()
-      val taints = node.spec?.taints?.map { it.key } ?: emptyList()
+      val conditions = node.status.conditions
+      val taints = node.spec.taints.map { it.key }
       val activeConditions = conditions.filter { it.status == "True" }.map { it.type }
 
       KubeNode(
-        name = node.metadata?.name ?: UNKNOWN,
+        name = node.metadata.name,
         conditions = activeConditions,
         taints = taints
       )
