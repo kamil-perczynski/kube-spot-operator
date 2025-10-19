@@ -1,0 +1,13 @@
+{
+  "kind": "Status",
+  "apiVersion": "v1",
+  "metadata": {},
+  "status": "Failure",
+  "message": "nodes \"ip-10-46-103-95.eu-north-1.compute.internal\" not found",
+  "reason": "NotFound",
+  "details": {
+    "name": "ip-10-46-103-95.eu-north-1.compute.internal",
+    "kind": "nodes"
+  },
+  "code": 404
+}

@@ -2,7 +2,6 @@ package pl.kperczynski.kube_spot_operator.kube
 
 import com.github.tomakehurst.wiremock.stubbing.Scenario
 import io.vertx.core.Future
-import io.vertx.core.Promise
 import io.vertx.core.Vertx
 import io.vertx.junit5.VertxExtension
 import io.vertx.junit5.VertxTestContext
@@ -348,41 +347,41 @@ class KubeClientTest {
   }
 
   @Test
-  fun testRetryDecorator(vertx: Vertx, ctx: VertxTestContext) {
+  fun testDeleteNodeSuccess(ctx: VertxTestContext) {
     // given:
-    val decor = retryDecorator<Void>("TestOp", vertx, arrayOf(20, 50, 100))
+    val nodeName = "ip-10-46-102-33.eu-north-1.compute.internal"
 
-    // when & then:
-    decor {
-      Future.failedFuture(IllegalArgumentException("Sth bad happened"))
-    }.onComplete(
-      { ctx.failNow("Should fail") },
-      { ctx.completeNow() }
-    )
+    val stubDeleteNode = kubeStubs.stubDeleteNodeSuccess(nodeName)
+
+    // when:
+    val deleteNode = stubDeleteNode.compose { kubeClient.deleteNode(nodeName) }
+
+    // then:
+    deleteNode
+      .onComplete({ ctx.completeNow() }, ctx::failNow)
   }
-}
 
-fun <T> retryDecorator(
-  opName: String,
-  vertx: Vertx,
-  times: Array<Long> = arrayOf(3000L, 5000L, 10000L),
-): (() -> Future<T>) -> Future<T> {
-  return { fn ->
-    var res = fn()
+  @Test
+  fun testDeleteNodeNotFound(ctx: VertxTestContext) {
+    // given:
+    val nodeName = "ip-10-46-999-99.eu-north-1.compute.internal"
 
-    for ((index, lng) in times.withIndex()) {
-      res = res.recover { err ->
-        println("$opName fail #${index + 1}: ${err.message}, ${lng / 1000}s to retry...")
-        setTimeout(vertx, lng).compose { fn() }
-      }
-    }
+    val stubDeleteNode = kubeStubs.stubDeleteNodeNotFound(nodeName)
 
-    res
+    // when:
+    val deleteNode = stubDeleteNode.compose { kubeClient.deleteNode(nodeName) }
+
+    // then:
+    deleteNode
+      .onComplete(
+        { ctx.failNow(IllegalStateException("Expected failure but got success")) },
+        {
+          assertThat(it)
+            .isInstanceOf(KubeClientException::class.java)
+            .hasMessageContaining("Call DELETE /api/v1/nodes/$nodeName returned status=404")
+
+          ctx.completeNow()
+        }
+      )
   }
-}
-
-fun setTimeout(vertx: Vertx, delayMs: Long): Future<Void> {
-  val promise = Promise.promise<Void>()
-  vertx.setTimer(delayMs) { promise.complete() }
-  return promise.future()
 }

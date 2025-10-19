@@ -33,12 +33,12 @@ class MainVerticle() : VerticleBase() {
       .flatMap { configMap ->
         vertx
           .deployVerticle(
-            Supplier<Deployable> { KubeClientVerticle(configMap.kubeClient) },
+            Supplier<Deployable> { KubeClientVerticle(configMap.kubeClient, configMap.kubeNode) },
             DeploymentOptions().setInstances(2)
           )
           .compose {
             vertx.deployVerticle(
-              Supplier<Deployable> { EC2EventsVerticle(configMap.ec2) },
+              Supplier<Deployable> { EC2EventsVerticle(configMap.ec2, configMap.kubeNode) },
               DeploymentOptions().setInstances(1)
             )
           }

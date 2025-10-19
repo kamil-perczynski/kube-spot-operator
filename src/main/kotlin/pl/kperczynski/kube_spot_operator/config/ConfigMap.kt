@@ -8,22 +8,28 @@ import pl.kperczynski.kube_spot_operator.kube.KubeClientProps
 data class ConfigMap(
   val kubeClient: KubeClientProps,
   val httpServer: HttpServerProps,
-  val ec2: EC2MetadataProps
+  val ec2: EC2MetadataProps,
+  val kubeNode: KubeNodeProps,
 )
 
 fun parseConfigMap(jsonObject: JsonObject): ConfigMap {
   val kubeClient = readKubeClientProps(jsonObject.getJsonObject("kube"))
   val httpServer = readHttpServerProps(jsonObject.getJsonObject("server"))
   val ec2 = readEc2MetadataProps(jsonObject.getJsonObject("ec2"))
+  val kubeNode = readKubeNodeProps(jsonObject.getJsonObject("kubeNode"))
 
-  return ConfigMap(kubeClient, httpServer, ec2)
+  return ConfigMap(
+    kubeClient = kubeClient,
+    httpServer = httpServer,
+    ec2 = ec2,
+    kubeNode = kubeNode
+  )
 }
 
 fun readEc2MetadataProps(json: JsonObject): EC2MetadataProps {
   return EC2MetadataProps(
     timerInterval = json.getLong("timerInterval", 30_000L),
     enabled = json.getBoolean("enabled", true),
-    currentNode = resolveEnv(json.getString("currentNode")),
     apiOrigin = json.getString("apiOrigin"),
     ttlSeconds = json.getLong("ttlSeconds")
   )
@@ -38,6 +44,12 @@ fun readKubeClientProps(json: JsonObject): KubeClientProps {
     openIdConfigurationEndpoint = json.getString("openIdConfigurationEndpoint"),
     externalJwksUri = json.getString("externalJwksUri"),
     sslTrustAll = json.getBoolean("sslTrustAll", false)
+  )
+}
+
+fun readKubeNodeProps(json: JsonObject): KubeNodeProps {
+  return KubeNodeProps(
+    currentNodeName = resolveEnv(json.getString("currentNodeName"))
   )
 }
 
