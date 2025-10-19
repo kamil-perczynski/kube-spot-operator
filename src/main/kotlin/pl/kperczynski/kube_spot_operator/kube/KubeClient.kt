@@ -16,10 +16,11 @@ import io.vertx.core.net.PemTrustOptions
 import io.vertx.uritemplate.UriTemplate
 import io.vertx.uritemplate.Variables
 import org.slf4j.LoggerFactory
+import org.slf4j.event.Level
 import pl.kperczynski.kube_spot_operator.domain.KubeNode
 import pl.kperczynski.kube_spot_operator.domain.KubePod
-import pl.kperczynski.kube_spot_operator.http.handleResponseErrors
-import pl.kperczynski.kube_spot_operator.http.preconfigureRequest
+import pl.kperczynski.kube_spot_operator.libs.handleResponseErrors
+import pl.kperczynski.kube_spot_operator.libs.preconfigureRequest
 import java.net.URI
 
 private val log = LoggerFactory.getLogger(KubeClient::class.java)
@@ -70,7 +71,7 @@ class KubeClient(
       .compose { token ->
         httpClient
           .request(GET, "/api/v1/nodes")
-          .onSuccess(preconfigureRequest(log))
+          .onSuccess(preconfigureRequest(log, Level.TRACE))
           .compose { req ->
             req.putHeader(HttpHeaders.AUTHORIZATION, "Bearer $token")
             req.send()
@@ -78,7 +79,7 @@ class KubeClient(
           .compose { handleResponseErrors(it, log) }
           .map { body ->
             val listNode = Json.decodeValue(body, V1NodeList::class.java)
-            toNodesList(listNode)
+            toNodesList(listNode).sortedBy { it.name }
           }
       }
   }
@@ -157,6 +158,20 @@ class KubeClient(
           val podList = Json.decodeValue(body, V1PodList::class.java)
           toPodsList(podList)
         }
+    }
+  }
+
+  fun deleteNode(nodeName: String): Future<Void> {
+    return readToken().compose { token ->
+      httpClient
+        .request(DELETE, "/api/v1/nodes/$nodeName")
+        .onSuccess(preconfigureRequest(log))
+        .compose { req ->
+          req.putHeader(HttpHeaders.AUTHORIZATION, "Bearer $token")
+          req.send()
+        }
+        .compose { handleResponseErrors(it, log) }
+        .mapEmpty()
     }
   }
 

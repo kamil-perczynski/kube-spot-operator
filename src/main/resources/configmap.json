@@ -2,6 +2,9 @@
   "server": {
     "port": 8080
   },
+  "kubeNode": {
+    "currentNodeName": "$env:CURRENT_KUBERNETES_NODE"
+  },
   "kube": {
     "apiOrigin": "https://kubernetes.default.svc:6443",
     "tokenPath": "./.kube/token",
@@ -12,7 +15,6 @@
     "sslTrustAll": false
   },
   "ec2": {
-    "currentNode": "$env:CURRENT_KUBERNETES_NODE",
     "apiOrigin": "http://169.254.169.254",
     "ttlSeconds": 21600
   }

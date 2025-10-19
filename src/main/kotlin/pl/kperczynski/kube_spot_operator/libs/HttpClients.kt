@@ -1,4 +1,4 @@
-package pl.kperczynski.kube_spot_operator.http
+package pl.kperczynski.kube_spot_operator.libs
 
 import io.netty.handler.codec.http.HttpStatusClass
 import io.vertx.core.Future
@@ -7,11 +7,12 @@ import io.vertx.core.buffer.Buffer
 import io.vertx.core.http.HttpClientRequest
 import io.vertx.core.http.HttpClientResponse
 import org.slf4j.Logger
+import org.slf4j.event.Level
 import pl.kperczynski.kube_spot_operator.kube.KubeClientException
 
-fun preconfigureRequest(log: Logger): Handler<in HttpClientRequest> {
+fun preconfigureRequest(log: Logger, level: Level = Level.DEBUG): Handler<in HttpClientRequest> {
   return Handler {
-    log.debug("Calling {} {}", it.method, it.uri)
+    log.atLevel(level).log("Calling {} {}", it.method, it.uri)
     it.idleTimeout(5000L)
   }
 }

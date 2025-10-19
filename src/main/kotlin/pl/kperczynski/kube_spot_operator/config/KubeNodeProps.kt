@@ -1,0 +1,3 @@
+package pl.kperczynski.kube_spot_operator.config
+
+data class KubeNodeProps(val currentNodeName: String)

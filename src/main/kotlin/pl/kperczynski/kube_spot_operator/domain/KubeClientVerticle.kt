@@ -7,6 +7,7 @@ import io.vertx.core.eventbus.Message
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import org.slf4j.Logger
+import pl.kperczynski.kube_spot_operator.config.KubeNodeProps
 import pl.kperczynski.kube_spot_operator.domain.EventIds.NODE_TERMINATION_SCHEDULED
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.DRAIN_KUBE_NODE
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.GET_JWKS
@@ -19,16 +20,23 @@ import pl.kperczynski.kube_spot_operator.kube.kubeHttpClient
 import pl.kperczynski.kube_spot_operator.libs.RecipientException
 import pl.kperczynski.kube_spot_operator.logging.Slf4j
 
-class KubeClientVerticle(private val kubeClientProps: KubeClientProps) : VerticleBase() {
+private const val ONE_MINUTE = 60 * 1000L
+
+class KubeClientVerticle(
+  private val kubeClientProps: KubeClientProps,
+  private val kubeNodeProps: KubeNodeProps
+) : VerticleBase() {
 
   companion object : Slf4j()
 
   private lateinit var kubeClient: KubeClient
   private lateinit var drainNodeService: DrainNodeService
+  private lateinit var deleteNodeService: DeleteNodeService
 
   override fun start(): Future<*> {
     this.kubeClient = KubeClient(kubeHttpClient(vertx, kubeClientProps), vertx, kubeClientProps)
     this.drainNodeService = DrainNodeService(kubeClient, vertx)
+    this.deleteNodeService = DeleteNodeService(kubeClient, kubeNodeProps)
 
     val bus = vertx.eventBus()
 
@@ -93,6 +101,10 @@ class KubeClientVerticle(private val kubeClientProps: KubeClientProps) : Verticl
         .onFailure(consumerErrorHandler(msg, log))
     }
 
+    vertx.setPeriodic(ONE_MINUTE) {
+      deleteNodeService.cleanupNodes()
+    }
+
     return Future.all(
       getJwksConsumer.completion(),
       getOpenIdConfigurationConsumer.completion(),
@@ -102,6 +114,7 @@ class KubeClientVerticle(private val kubeClientProps: KubeClientProps) : Verticl
       nodeTerminationConsumer.completion()
     )
   }
+
 }
 
 private fun toOpenIdConfiguration(kubeOpenIdConfig: JsonObject, externalJwksUri: String): JsonObject {

@@ -96,6 +96,34 @@ class KubeApiStubs(private val vertx: Vertx, private val wiremock: WireMockServe
     }
   }
 
+  fun stubDeleteNodeSuccess(nodeName: String): Future<StubMapping> {
+    return vertx.fileSystem().readFile("./mocks/node-delete-success.json").map { deleteNodeJson ->
+      wiremock.stubFor(
+        delete("/api/v1/nodes/$nodeName")
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader(CONTENT_TYPE.toString(), "application/json")
+              .withBody(deleteNodeJson.bytes)
+          )
+      )
+    }
+  }
+
+  fun stubDeleteNodeNotFound(nodeName: String): Future<StubMapping> {
+    return vertx.fileSystem().readFile("./mocks/node-delete-not-found.json").map { deleteNodeJson ->
+      wiremock.stubFor(
+        delete("/api/v1/nodes/$nodeName")
+          .willReturn(
+            aResponse()
+              .withStatus(404)
+              .withHeader(CONTENT_TYPE.toString(), "application/json")
+              .withBody(deleteNodeJson.bytes)
+          )
+      )
+    }
+  }
+
   fun resetAll() {
     wiremock.resetAll()
   }

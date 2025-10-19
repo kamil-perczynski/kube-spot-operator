@@ -8,8 +8,9 @@ import io.vertx.core.http.HttpClientOptions
 import io.vertx.core.http.HttpMethod
 import io.vertx.core.json.JsonObject
 import org.slf4j.LoggerFactory
-import pl.kperczynski.kube_spot_operator.http.handleResponseErrors
-import pl.kperczynski.kube_spot_operator.http.preconfigureRequest
+import org.slf4j.event.Level
+import pl.kperczynski.kube_spot_operator.libs.handleResponseErrors
+import pl.kperczynski.kube_spot_operator.libs.preconfigureRequest
 import java.net.URI
 import java.time.Duration
 import java.time.Instant
@@ -30,7 +31,7 @@ class EC2MetadataClient(
     return acquireToken()
       .compose { token ->
         httpClient.request(HttpMethod.GET, "/latest/meta-data/spot/instance-action")
-          .onSuccess(preconfigureRequest(log))
+          .onSuccess(preconfigureRequest(log, Level.TRACE))
           .compose { req ->
             req.putHeader(X_AWS_EC2_METADATA_TOKEN, token)
             req.send()
@@ -74,7 +75,7 @@ class EC2MetadataClient(
 
   private fun fetchToken(): Future<String> {
     return httpClient.request(HttpMethod.PUT, "/latest/api/token")
-      .onSuccess(preconfigureRequest(log))
+      .onSuccess(preconfigureRequest(log, Level.TRACE))
       .compose { req ->
         req.putHeader("X-aws-ec2-metadata-token-ttl-seconds", ec2MetadataProps.ttlSeconds.toString())
         req.send()

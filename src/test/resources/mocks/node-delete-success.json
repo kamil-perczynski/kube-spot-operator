@@ -1,0 +1,372 @@
+{
+  "kind": "Node",
+  "apiVersion": "v1",
+  "metadata": {
+    "name": "ip-10-46-102-40.eu-north-1.compute.internal",
+    "uid": "86d8b8ec-4b4c-42a2-8f8f-a0554702aeaa",
+    "resourceVersion": "39519251",
+    "creationTimestamp": "2025-10-17T14:50:43Z",
+    "labels": {
+      "beta.kubernetes.io/arch": "arm64",
+      "beta.kubernetes.io/instance-type": "k3s",
+      "beta.kubernetes.io/os": "linux",
+      "kubernetes.io/arch": "arm64",
+      "kubernetes.io/hostname": "ip-10-46-102-40.eu-north-1.compute.internal",
+      "kubernetes.io/os": "linux",
+      "node-role.kubernetes.io/control-plane": "true",
+      "node-role.kubernetes.io/master": "true",
+      "node.kubernetes.io/instance-type": "k3s"
+    },
+    "annotations": {
+      "alpha.kubernetes.io/provided-node-ip": "10.46.102.40",
+      "flannel.alpha.coreos.com/backend-data": "{\"VNI\":1,\"VtepMAC\":\"52:50:66:99:2f:19\"}",
+      "flannel.alpha.coreos.com/backend-type": "vxlan",
+      "flannel.alpha.coreos.com/kube-subnet-manager": "true",
+      "flannel.alpha.coreos.com/public-ip": "10.46.102.40",
+      "k3s.io/hostname": "ip-10-46-102-40.eu-north-1.compute.internal",
+      "k3s.io/internal-ip": "10.46.102.40",
+      "k3s.io/node-args": "[\"server\",\"--kube-apiserver-arg\",\"service-account-issuer=https://openid.k8s.kperczynski.click\"]",
+      "k3s.io/node-config-hash": "IAF7LCPDRX7ZN55XWN2M6CBLQVS5YFBGVNUQGZPGR6DKDFYWJ67Q====",
+      "k3s.io/node-env": "{\"K3S_DATASTORE_ENDPOINT\":\"********\",\"K3S_TOKEN\":\"********\"}",
+      "node.alpha.kubernetes.io/ttl": "0",
+      "volumes.kubernetes.io/controller-managed-attach-detach": "true"
+    },
+    "finalizers": [
+      "wrangler.cattle.io/node"
+    ],
+    "managedFields": [
+      {
+        "manager": "k3s-supervisor@ip-10-46-103-245.eu-north-1.compute.internal",
+        "operation": "Update",
+        "apiVersion": "v1",
+        "time": "2025-10-17T14:50:43Z",
+        "fieldsType": "FieldsV1",
+        "fieldsV1": {
+          "f:metadata": {
+            "f:finalizers": {
+              ".": {},
+              "v:\"wrangler.cattle.io/node\"": {}
+            }
+          }
+        }
+      },
+      {
+        "manager": "k3s",
+        "operation": "Update",
+        "apiVersion": "v1",
+        "time": "2025-10-17T14:50:44Z",
+        "fieldsType": "FieldsV1",
+        "fieldsV1": {
+          "f:metadata": {
+            "f:annotations": {
+              ".": {},
+              "f:alpha.kubernetes.io/provided-node-ip": {},
+              "f:k3s.io/hostname": {},
+              "f:k3s.io/internal-ip": {},
+              "f:k3s.io/node-args": {},
+              "f:k3s.io/node-config-hash": {},
+              "f:k3s.io/node-env": {},
+              "f:node.alpha.kubernetes.io/ttl": {},
+              "f:volumes.kubernetes.io/controller-managed-attach-detach": {}
+            },
+            "f:labels": {
+              ".": {},
+              "f:beta.kubernetes.io/arch": {},
+              "f:beta.kubernetes.io/instance-type": {},
+              "f:beta.kubernetes.io/os": {},
+              "f:kubernetes.io/arch": {},
+              "f:kubernetes.io/hostname": {},
+              "f:kubernetes.io/os": {},
+              "f:node.kubernetes.io/instance-type": {}
+            }
+          },
+          "f:spec": {
+            "f:podCIDR": {},
+            "f:podCIDRs": {
+              ".": {},
+              "v:\"10.42.1.0/24\"": {}
+            },
+            "f:providerID": {}
+          }
+        }
+      },
+      {
+        "manager": "k3s-supervisor@ip-10-46-102-40.eu-north-1.compute.internal",
+        "operation": "Update",
+        "apiVersion": "v1",
+        "time": "2025-10-17T14:50:44Z",
+        "fieldsType": "FieldsV1",
+        "fieldsV1": {
+          "f:metadata": {
+            "f:labels": {
+              "f:node-role.kubernetes.io/control-plane": {},
+              "f:node-role.kubernetes.io/master": {}
+            }
+          }
+        }
+      },
+      {
+        "manager": "k3s",
+        "operation": "Update",
+        "apiVersion": "v1",
+        "time": "2025-10-19T06:15:15Z",
+        "fieldsType": "FieldsV1",
+        "fieldsV1": {
+          "f:metadata": {
+            "f:annotations": {
+              "f:flannel.alpha.coreos.com/backend-data": {},
+              "f:flannel.alpha.coreos.com/backend-type": {},
+              "f:flannel.alpha.coreos.com/kube-subnet-manager": {},
+              "f:flannel.alpha.coreos.com/public-ip": {}
+            }
+          },
+          "f:status": {
+            "f:conditions": {
+              "k:{\"type\":\"DiskPressure\"}": {
+                "f:lastHeartbeatTime": {}
+              },
+              "k:{\"type\":\"MemoryPressure\"}": {
+                "f:lastHeartbeatTime": {}
+              },
+              "k:{\"type\":\"PIDPressure\"}": {
+                "f:lastHeartbeatTime": {}
+              },
+              "k:{\"type\":\"Ready\"}": {
+                "f:lastHeartbeatTime": {},
+                "f:lastTransitionTime": {},
+                "f:message": {},
+                "f:reason": {},
+                "f:status": {}
+              }
+            },
+            "f:images": {}
+          }
+        },
+        "subresource": "status"
+      }
+    ]
+  },
+  "spec": {
+    "podCIDR": "10.42.1.0/24",
+    "podCIDRs": [
+      "10.42.1.0/24"
+    ],
+    "providerID": "k3s://ip-10-46-102-40.eu-north-1.compute.internal"
+  },
+  "status": {
+    "capacity": {
+      "cpu": "1",
+      "ephemeral-storage": "16700396Ki",
+      "hugepages-1Gi": "0",
+      "hugepages-2Mi": "0",
+      "hugepages-32Mi": "0",
+      "hugepages-64Ki": "0",
+      "memory": "3903880Ki",
+      "pods": "110"
+    },
+    "allocatable": {
+      "cpu": "1",
+      "ephemeral-storage": "16246145217",
+      "hugepages-1Gi": "0",
+      "hugepages-2Mi": "0",
+      "hugepages-32Mi": "0",
+      "hugepages-64Ki": "0",
+      "memory": "3903880Ki",
+      "pods": "110"
+    },
+    "conditions": [
+      {
+        "type": "MemoryPressure",
+        "status": "False",
+        "lastHeartbeatTime": "2025-10-19T06:15:15Z",
+        "lastTransitionTime": "2025-10-17T14:50:43Z",
+        "reason": "KubeletHasSufficientMemory",
+        "message": "kubelet has sufficient memory available"
+      },
+      {
+        "type": "DiskPressure",
+        "status": "False",
+        "lastHeartbeatTime": "2025-10-19T06:15:15Z",
+        "lastTransitionTime": "2025-10-17T14:50:43Z",
+        "reason": "KubeletHasNoDiskPressure",
+        "message": "kubelet has no disk pressure"
+      },
+      {
+        "type": "PIDPressure",
+        "status": "False",
+        "lastHeartbeatTime": "2025-10-19T06:15:15Z",
+        "lastTransitionTime": "2025-10-17T14:50:43Z",
+        "reason": "KubeletHasSufficientPID",
+        "message": "kubelet has sufficient PID available"
+      },
+      {
+        "type": "Ready",
+        "status": "True",
+        "lastHeartbeatTime": "2025-10-19T06:15:15Z",
+        "lastTransitionTime": "2025-10-17T14:50:44Z",
+        "reason": "KubeletReady",
+        "message": "kubelet is posting ready status"
+      }
+    ],
+    "addresses": [
+      {
+        "type": "InternalIP",
+        "address": "10.46.102.40"
+      },
+      {
+        "type": "Hostname",
+        "address": "ip-10-46-102-40.eu-north-1.compute.internal"
+      }
+    ],
+    "daemonEndpoints": {
+      "kubeletEndpoint": {
+        "Port": 10250
+      }
+    },
+    "nodeInfo": {
+      "machineID": "ec2e88ad607e17d461773895f7e8bdbb",
+      "systemUUID": "ec2e88ad-607e-17d4-6177-3895f7e8bdbb",
+      "bootID": "6651e69c-7bf3-4363-b331-68d14a577df0",
+      "kernelVersion": "6.1.79-99.164.amzn2023.aarch64",
+      "osImage": "Amazon Linux 2023.3.20240304",
+      "containerRuntimeVersion": "containerd://2.1.4-k3s1",
+      "kubeletVersion": "v1.33.5+k3s1",
+      "kubeProxyVersion": "",
+      "operatingSystem": "linux",
+      "architecture": "arm64"
+    },
+    "images": [
+      {
+        "names": [
+          "quay.io/argoproj/argocd@sha256:19ba7f44cba487c4a0c98ac336327c4df04383dff84f87ea1a578972eb62dd17",
+          "quay.io/argoproj/argocd:v3.1.8"
+        ],
+        "sizeBytes": 185960054
+      },
+      {
+        "names": [
+          "ghcr.io/kamil-perczynski/druglib-be@sha256:7c2a23c788dff0d8f6d770fc05d8842ebd7a6d0e995e362957dd1c86e9df0597",
+          "ghcr.io/kamil-perczynski/druglib-be:main-f7bd562"
+        ],
+        "sizeBytes": 181719562
+      },
+      {
+        "names": [
+          "docker.io/grafana/alloy@sha256:5039cc7a3cbde07120e757decc40f8f55f82c9bd0db45892a8b0e0c9a3371f4b",
+          "docker.io/grafana/alloy:v1.9.2"
+        ],
+        "sizeBytes": 132215621
+      },
+      {
+        "names": [
+          "ghcr.io/kamil-perczynski/kube-spot-operator@sha256:d2b6a4141ca9d9d102eca4f4a5b93485906e8cb920df6ec8ae2fadcb87e3aa05",
+          "ghcr.io/kamil-perczynski/kube-spot-operator:main-af3c004"
+        ],
+        "sizeBytes": 123348751
+      },
+      {
+        "names": [
+          "ghcr.io/kamil-perczynski/kube-spot-operator@sha256:7ff43d5065e3f9e03fe6e43787005f660271791f0241450763534a0ab48fb8c5",
+          "ghcr.io/kamil-perczynski/kube-spot-operator:main-76b3b6e"
+        ],
+        "sizeBytes": 123337859
+      },
+      {
+        "names": [
+          "docker.io/rancher/mirrored-library-traefik@sha256:9595fc80fa8ed6c5f3876416332ca7c88e8f255daaf265cff6b857b8d0f44503",
+          "docker.io/rancher/mirrored-library-traefik:3.3.6"
+        ],
+        "sizeBytes": 54457822
+      },
+      {
+        "names": [
+          "docker.io/library/nginx@sha256:61e01287e546aac28a3f56839c136b31f590273f3b41187a36f46f6a03bbfe22",
+          "docker.io/library/nginx:alpine"
+        ],
+        "sizeBytes": 23078652
+      },
+      {
+        "names": [
+          "docker.io/rancher/mirrored-coredns-coredns@sha256:1391544c978029fcddc65068f6ad67f396e55585b664ecccd7fefba029b9b706",
+          "docker.io/rancher/mirrored-coredns-coredns:1.12.3"
+        ],
+        "sizeBytes": 20413463
+      },
+      {
+        "names": [
+          "docker.io/rancher/local-path-provisioner@sha256:80496fdeb307541007621959aa13aed41d31db9cd2dc4167c19833e0bfa3878c",
+          "docker.io/rancher/local-path-provisioner:v0.0.31"
+        ],
+        "sizeBytes": 19803489
+      },
+      {
+        "names": [
+          "ecr-public.aws.com/docker/library/redis@sha256:1a34bdba051ecd8a58ec8a3cc460acef697a1605e918149cc53d920673c1a0a7",
+          "ecr-public.aws.com/docker/library/redis:7.2.11-alpine"
+        ],
+        "sizeBytes": 17310433
+      },
+      {
+        "names": [
+          "registry.k8s.io/kube-state-metrics/kube-state-metrics@sha256:e750cd4b43f782e3106537026c2995cac85d921aedea334e1d16caad7877c360",
+          "registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.16.0"
+        ],
+        "sizeBytes": 16748095
+      },
+      {
+        "names": [
+          "quay.io/prometheus-operator/prometheus-config-reloader@sha256:959d47672fbff2776a04ec62b8afcec89e8c036af84dc5fade50019dab212746",
+          "quay.io/prometheus-operator/prometheus-config-reloader:v0.81.0"
+        ],
+        "sizeBytes": 13206055
+      },
+      {
+        "names": [
+          "quay.io/prometheus/node-exporter@sha256:d00a542e409ee618a4edc67da14dd48c5da66726bbd5537ab2af9c1dfc442c8a",
+          "quay.io/prometheus/node-exporter:v1.9.1"
+        ],
+        "sizeBytes": 12277744
+      },
+      {
+        "names": [
+          "docker.io/rancher/klipper-lb@sha256:7eb86d5b908ec6ddd9796253d8cc2f43df99420fc8b8a18452a94dc56f86aca0",
+          "docker.io/rancher/klipper-lb:v0.4.13"
+        ],
+        "sizeBytes": 5547992
+      },
+      {
+        "names": [
+          "docker.io/rancher/mirrored-pause@sha256:74c4244427b7312c5b901fe0f67cbc53683d06f4f24c6faee65d4182bf0fa893",
+          "docker.io/rancher/mirrored-pause:3.6"
+        ],
+        "sizeBytes": 253243
+      }
+    ],
+    "runtimeHandlers": [
+      {
+        "name": "",
+        "features": {
+          "recursiveReadOnlyMounts": true,
+          "userNamespaces": true
+        }
+      },
+      {
+        "name": "runc",
+        "features": {
+          "recursiveReadOnlyMounts": true,
+          "userNamespaces": true
+        }
+      },
+      {
+        "name": "runhcs-wcow-process",
+        "features": {
+          "recursiveReadOnlyMounts": false,
+          "userNamespaces": false
+        }
+      }
+    ],
+    "features": {
+      "supplementalGroupsPolicy": true
+    }
+  }
+}
