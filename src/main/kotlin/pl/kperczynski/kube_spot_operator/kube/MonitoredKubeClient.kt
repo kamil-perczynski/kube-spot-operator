@@ -5,8 +5,9 @@ import io.micrometer.core.instrument.Tag
 import io.micrometer.core.instrument.Timer
 import io.vertx.core.Future
 import io.vertx.core.json.JsonObject
-import pl.kperczynski.kube_spot_operator.domain.KubeNode
-import pl.kperczynski.kube_spot_operator.domain.KubePod
+import pl.kperczynski.kube_spot_operator.domain.KubeClient
+import pl.kperczynski.kube_spot_operator.domain.model.KubeNode
+import pl.kperczynski.kube_spot_operator.domain.model.KubePod
 
 class MonitoredKubeClient(
   private val delegate: KubeClient,

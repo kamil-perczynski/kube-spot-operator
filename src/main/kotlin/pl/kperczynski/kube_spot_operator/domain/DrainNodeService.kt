@@ -3,7 +3,7 @@ package pl.kperczynski.kube_spot_operator.domain
 import io.vertx.core.Future
 import io.vertx.core.Vertx
 import org.slf4j.LoggerFactory
-import pl.kperczynski.kube_spot_operator.kube.KubeClient
+import pl.kperczynski.kube_spot_operator.domain.model.KubePod
 import pl.kperczynski.kube_spot_operator.libs.retryDecorator
 
 private val log = LoggerFactory.getLogger(DrainNodeService::class.java)

@@ -5,7 +5,7 @@ import io.vertx.core.VerticleBase
 import io.vertx.core.Vertx
 import pl.kperczynski.kube_spot_operator.config.KubeNodeProps
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.CLEANUP_NODES
-import pl.kperczynski.kube_spot_operator.kube.KubeClient
+import pl.kperczynski.kube_spot_operator.domain.model.CleanupNodesInput
 import pl.kperczynski.kube_spot_operator.kube.KubeClientProps
 import pl.kperczynski.kube_spot_operator.logging.Slf4j
 

@@ -40,16 +40,13 @@ dependencies {
   implementation("ch.qos.logback:logback-classic:1.5.19")
   implementation("net.logstash.logback:logstash-logback-encoder:8.1")
   implementation("org.codehaus.janino:janino:3.1.12")
-  implementation("io.kubernetes:client-java:24.0.0") {
-    exclude(group = "com.squareup.okhttp3", module = "okhttp")
-  }
+
   implementation("com.fasterxml.jackson.core:jackson-databind:2.19.0")
   implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.0")
+  implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.19.0")
 
   testImplementation("org.assertj:assertj-core:3.27.6")
-
   testImplementation("org.wiremock:wiremock:3.13.1")
-
   testImplementation("io.vertx:vertx-junit5")
   testImplementation("org.junit.jupiter:junit-jupiter:$junitJupiterVersion")
 }

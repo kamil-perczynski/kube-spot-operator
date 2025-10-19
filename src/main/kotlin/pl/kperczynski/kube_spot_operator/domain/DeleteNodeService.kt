@@ -2,7 +2,7 @@ package pl.kperczynski.kube_spot_operator.domain
 
 import io.vertx.core.Future
 import pl.kperczynski.kube_spot_operator.config.KubeNodeProps
-import pl.kperczynski.kube_spot_operator.kube.KubeClient
+import pl.kperczynski.kube_spot_operator.domain.model.KubeNode
 import pl.kperczynski.kube_spot_operator.logging.Slf4j
 
 class DeleteNodeService(

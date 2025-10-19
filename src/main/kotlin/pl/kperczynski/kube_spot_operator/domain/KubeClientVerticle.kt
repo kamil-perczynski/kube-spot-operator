@@ -13,7 +13,9 @@ import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.CLEANUP_NODES
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.DRAIN_KUBE_NODE
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.GET_JWKS
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.GET_OPENID_CONFIG
-import pl.kperczynski.kube_spot_operator.kube.KubeClient
+import pl.kperczynski.kube_spot_operator.domain.model.CleanupNodesInput
+import pl.kperczynski.kube_spot_operator.domain.model.DrainNodeInput
+import pl.kperczynski.kube_spot_operator.domain.model.NodeTerminationScheduledInput
 import pl.kperczynski.kube_spot_operator.kube.KubeClientProps
 import pl.kperczynski.kube_spot_operator.libs.RecipientException
 import pl.kperczynski.kube_spot_operator.logging.Slf4j
