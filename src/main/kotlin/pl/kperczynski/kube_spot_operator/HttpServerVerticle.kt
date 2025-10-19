@@ -13,37 +13,23 @@ import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import org.slf4j.Logger
-import pl.kperczynski.kube_spot_operator.domain.DrainNodeInput
-import pl.kperczynski.kube_spot_operator.domain.ListPodsInput
-import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.DRAIN_KUBE_NODE
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.GET_JWKS
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.GET_OPENID_CONFIG
-import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.LIST_KUBE_NODES
-import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.LIST_NODE_PODS
 import pl.kperczynski.kube_spot_operator.http.HttpServerProps
-import pl.kperczynski.kube_spot_operator.kube.KubeClient
-import pl.kperczynski.kube_spot_operator.kube.KubeClientProps
-import pl.kperczynski.kube_spot_operator.kube.kubeHttpClient
 import pl.kperczynski.kube_spot_operator.logging.Slf4j
 
 private const val APPLICATION_JSON = "application/json"
 
-class HttpServerVerticle(
-  private val httpProps: HttpServerProps,
-  private val kubeClientProps: KubeClientProps
-) : VerticleBase() {
+class HttpServerVerticle(private val httpProps: HttpServerProps) : VerticleBase() {
 
   companion object : Slf4j()
 
-  private lateinit var kubeClient: KubeClient
   private lateinit var router: Router
   private lateinit var server: HttpServer
 
   override fun start(): Future<*> {
     this.server = vertx.createHttpServer()
     this.router = Router.router(vertx)
-
-    this.kubeClient = KubeClient(kubeHttpClient(vertx, kubeClientProps), vertx, kubeClientProps)
 
     router.get("/").handler {
       jsonResponse(
@@ -56,9 +42,6 @@ class HttpServerVerticle(
               .plus("/actuator/health")
               .plus("/.well-known/openid-configuration")
               .plus("/openid/v1/jwks")
-              .plus("/api/nodes")
-              .plus("/api/pods?nodeId={nodeId}")
-              .plus("/api/drain-node?nodeId={nodeId}")
           )
       )
     }
@@ -75,41 +58,6 @@ class HttpServerVerticle(
         .request<JsonObject>(GET_JWKS, null)
         .onSuccess { msg -> jsonResponse(it.response(), msg.body()) }
         .onFailure { err -> handleError(it, err, log) }
-    }
-
-    router.get("/api/nodes").handler {
-      vertx.eventBus()
-        .request<JsonObject>(LIST_KUBE_NODES, null)
-        .onSuccess { msg -> jsonResponse(it.response(), msg.body()) }
-        .onFailure { err -> handleError(it, err, log) }
-    }
-
-    router.get("/api/pods").handler { ctx ->
-      val nodeId = ctx.queryParam("nodeId").firstOrNull()
-
-      if (nodeId.isNullOrBlank()) {
-        handleError(ctx, IllegalArgumentException("Missing nodeId query parameter"), log)
-        return@handler
-      }
-
-      vertx.eventBus()
-        .request<JsonObject>(LIST_NODE_PODS, ListPodsInput(nodeId = nodeId))
-        .onSuccess { msg -> jsonResponse(ctx.response(), msg.body()) }
-        .onFailure { err -> handleError(ctx, err, log) }
-    }
-
-    router.get("/api/drain-node").handler { ctx ->
-      val nodeId = ctx.queryParam("nodeId").firstOrNull()
-
-      if (nodeId.isNullOrBlank()) {
-        handleError(ctx, IllegalArgumentException("Missing nodeId query parameter"), log)
-        return@handler
-      }
-
-      vertx.eventBus()
-        .request<JsonObject>(DRAIN_KUBE_NODE, DrainNodeInput(nodeId = nodeId))
-        .onSuccess { msg -> jsonResponse(ctx.response(), msg.body()) }
-        .onFailure { err -> handleError(ctx, err, log) }
     }
 
     router.get("/.well-known/openid-configuration").handler {
