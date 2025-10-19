@@ -15,7 +15,6 @@ import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.GET_JWKS
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.GET_OPENID_CONFIG
 import pl.kperczynski.kube_spot_operator.kube.KubeClient
 import pl.kperczynski.kube_spot_operator.kube.KubeClientProps
-import pl.kperczynski.kube_spot_operator.kube.kubeHttpClient
 import pl.kperczynski.kube_spot_operator.libs.RecipientException
 import pl.kperczynski.kube_spot_operator.logging.Slf4j
 
@@ -31,7 +30,7 @@ class KubeClientVerticle(
   private lateinit var deleteNodeService: DeleteNodeService
 
   override fun start(): Future<*> {
-    this.kubeClient = KubeClient(kubeHttpClient(vertx, kubeClientProps), vertx, kubeClientProps)
+    this.kubeClient = monitoredKubeClient(vertx, kubeClientProps)
     this.drainNodeService = DrainNodeService(kubeClient, vertx)
     this.deleteNodeService = DeleteNodeService(kubeClient, kubeNodeProps)
 

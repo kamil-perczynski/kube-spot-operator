@@ -15,6 +15,7 @@ import pl.kperczynski.kube_spot_operator.bootstrapConfig
 import pl.kperczynski.kube_spot_operator.config.ConfigMap
 import pl.kperczynski.kube_spot_operator.domain.DrainNodeService
 import pl.kperczynski.kube_spot_operator.domain.KubePod
+import pl.kperczynski.kube_spot_operator.domain.kubeHttpClient
 
 @ExtendWith(VertxExtension::class)
 class KubeClientTest {
@@ -24,7 +25,7 @@ class KubeClientTest {
     private lateinit var drainNodeService: DrainNodeService
     private lateinit var configmap: ConfigMap
     private lateinit var kubeStubs: KubeApiStubs
-    private lateinit var kubeClient: KubeClient
+    private lateinit var kubeClient: HttpKubeClient
 
     @BeforeAll
     @JvmStatic
@@ -38,7 +39,7 @@ class KubeClientTest {
           kubeStubs = KubeApiStubs(vertx, kubeWiremock.wiremock)
         }
         .onSuccess {
-          kubeClient = KubeClient(
+          kubeClient = HttpKubeClient(
             kubeHttpClient(vertx, configmap.kubeClient),
             vertx,
             configmap.kubeClient

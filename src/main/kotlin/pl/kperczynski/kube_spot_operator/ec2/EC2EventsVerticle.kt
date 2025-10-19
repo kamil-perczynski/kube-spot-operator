@@ -20,10 +20,7 @@ class EC2EventsVerticle(
   private var terminationScheduled: Boolean = false
 
   override fun start(): Future<*> {
-    this.ec2MetadataClient = EC2MetadataClient(
-      httpClient = ec2MetadataHttpClient(vertx, ec2MetadataProps),
-      ec2MetadataProps = ec2MetadataProps
-    )
+    this.ec2MetadataClient = monitoredEC2MetadataClient(vertx, ec2MetadataProps)
 
     if (ec2MetadataProps.enabled) {
       val interval = Duration.ofMillis(ec2MetadataProps.timerInterval)
