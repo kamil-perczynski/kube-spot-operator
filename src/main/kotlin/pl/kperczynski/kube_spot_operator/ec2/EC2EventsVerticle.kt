@@ -71,7 +71,7 @@ class EC2EventsVerticle(
       )
 
       when (lifecycleState) {
-        TERMINATING_WAIT, TERMINATING, TERMINATING_PROCEED -> {
+        TERMINATING_WAIT, TERMINATING, TERMINATING_PROCEED, TERMINATED -> {
           log.info(
             "ASG requested node={} to transition into state={}",
             kubeNodeProps.currentNodeName,
