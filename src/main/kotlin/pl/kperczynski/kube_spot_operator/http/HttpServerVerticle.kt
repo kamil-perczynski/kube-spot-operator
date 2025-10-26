@@ -1,4 +1,4 @@
-package pl.kperczynski.kube_spot_operator
+package pl.kperczynski.kube_spot_operator.http
 
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.codec.http.HttpResponseStatus.OK
@@ -16,7 +16,6 @@ import io.vertx.micrometer.PrometheusScrapingHandler
 import org.slf4j.Logger
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.GET_JWKS
 import pl.kperczynski.kube_spot_operator.domain.ServiceOpIds.GET_OPENID_CONFIG
-import pl.kperczynski.kube_spot_operator.http.HttpServerProps
 import pl.kperczynski.kube_spot_operator.logging.Slf4j
 
 private const val APPLICATION_JSON = "application/json"

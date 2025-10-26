@@ -47,6 +47,20 @@ class Ec2MetadataApiStubs(private val wiremock: WireMockServer) {
     )
   }
 
+  fun stubAsgLifecycleStateSuccess(state: String): Future<StubMapping> {
+    return Future.succeededFuture(
+      wiremock.stubFor(
+        get("/latest/meta-data/autoscaling/target-lifecycle-state")
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader(CONTENT_TYPE.toString(), "text/plain")
+              .withBody(state)
+          )
+      )
+    )
+  }
+
   fun stubInstanceActionTerminate(): Future<StubMapping> {
     return Future.succeededFuture(
       wiremock.stubFor(

@@ -3,10 +3,11 @@ package pl.kperczynski.kube_spot_operator.ec2
 import io.netty.handler.codec.http.HttpStatusClass
 import io.vertx.core.Future
 import io.vertx.core.http.HttpClient
-import io.vertx.core.http.HttpMethod
+import io.vertx.core.http.HttpMethod.*
 import io.vertx.core.json.JsonObject
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
+import pl.kperczynski.kube_spot_operator.ec2.AsgLifecycleState.*
 import pl.kperczynski.kube_spot_operator.libs.handleResponseErrors
 import pl.kperczynski.kube_spot_operator.libs.preconfigureRequest
 import java.time.Duration
@@ -27,7 +28,7 @@ class HttpEC2MetadataClient(
   override fun fetchInstanceAction(): Future<InstanceAction> {
     return acquireToken()
       .compose { token ->
-        httpClient.request(HttpMethod.GET, "/latest/meta-data/spot/instance-action")
+        httpClient.request(GET, "/latest/meta-data/spot/instance-action")
           .onSuccess(preconfigureRequest(log, Level.TRACE))
           .compose { req ->
             req.putHeader(X_AWS_EC2_METADATA_TOKEN, token)
@@ -54,6 +55,23 @@ class HttpEC2MetadataClient(
       }
   }
 
+  override fun fetchAsgTargetLifecycleState(): Future<AsgLifecycleState> {
+    return acquireToken()
+      .compose { token ->
+        httpClient.request(GET, "/latest/meta-data/autoscaling/target-lifecycle-state")
+          .onSuccess(preconfigureRequest(log, Level.TRACE))
+          .compose { req ->
+            req.putHeader(X_AWS_EC2_METADATA_TOKEN, token)
+            req.send()
+          }
+      }
+      .compose { res -> handleResponseErrors(res, log) }
+      .map { body ->
+        val stateStr = body.toString(Charsets.UTF_8)
+        toAsgLifecycleState(stateStr)
+      }
+  }
+
   private fun acquireToken(): Future<String> {
     if (!this::validTo.isInitialized) {
       log.info("EC2 metadata token is missing, fetching a new one")
@@ -71,7 +89,7 @@ class HttpEC2MetadataClient(
   }
 
   private fun fetchToken(): Future<String> {
-    return httpClient.request(HttpMethod.PUT, "/latest/api/token")
+    return httpClient.request(PUT, "/latest/api/token")
       .onSuccess(preconfigureRequest(log, Level.TRACE))
       .compose { req ->
         req.putHeader("X-aws-ec2-metadata-token-ttl-seconds", ec2MetadataProps.ttlSeconds.toString())
@@ -92,5 +110,30 @@ class HttpEC2MetadataClient(
         this.cachedToken = ""
         this.validTo = Instant.EPOCH
       }
+  }
+}
+
+fun toAsgLifecycleState(str: String): AsgLifecycleState {
+  return when (str) {
+    "Pending" -> PENDING
+    "InService" -> IN_SERVICE
+    "EnteringStandby" -> ENTERING_STANDBY
+    "Standby" -> STANDBY
+    "Terminating" -> TERMINATING
+    "Terminated" -> TERMINATED
+    "Detaching" -> DETACHING
+    "Detached" -> DETACHED
+    "Pending:Wait" -> PENDING_WAIT
+    "Pending:Proceed" -> PENDING_PROCEED
+    "Terminating:Wait" -> TERMINATING_WAIT
+    "Terminating:Proceed" -> TERMINATING_PROCEED
+    else -> {
+      log.warn(
+        "Unknown ASG lifecycle state fetched from EC2 metadata: {}. Falling back to {}",
+        str,
+        UNKNOWN_ASG_LIFECYCLE_STATE
+      )
+      UNKNOWN_ASG_LIFECYCLE_STATE
+    }
   }
 }
