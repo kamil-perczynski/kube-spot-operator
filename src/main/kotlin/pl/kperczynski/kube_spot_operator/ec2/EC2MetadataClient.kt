@@ -6,4 +6,6 @@ interface EC2MetadataClient {
 
   fun fetchInstanceAction(): Future<InstanceAction>
 
+  fun fetchAsgTargetLifecycleState(): Future<AsgLifecycleState>
 }
+

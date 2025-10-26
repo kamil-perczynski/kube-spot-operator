@@ -15,6 +15,7 @@ import pl.kperczynski.kube_spot_operator.config.parseConfigMap
 import pl.kperczynski.kube_spot_operator.domain.KubeClientVerticle
 import pl.kperczynski.kube_spot_operator.domain.KubeNodesCleanupVerticle
 import pl.kperczynski.kube_spot_operator.ec2.EC2EventsVerticle
+import pl.kperczynski.kube_spot_operator.http.HttpServerVerticle
 import pl.kperczynski.kube_spot_operator.libs.DirectMessageCodec
 import pl.kperczynski.kube_spot_operator.logging.Slf4j
 import java.util.function.Supplier

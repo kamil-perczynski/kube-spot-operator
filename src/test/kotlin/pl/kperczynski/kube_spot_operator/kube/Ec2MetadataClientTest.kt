@@ -8,8 +8,11 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import pl.kperczynski.kube_spot_operator.bootstrapConfig
 import pl.kperczynski.kube_spot_operator.config.ConfigMap
+import pl.kperczynski.kube_spot_operator.ec2.AsgLifecycleState
 import pl.kperczynski.kube_spot_operator.ec2.HttpEC2MetadataClient
 import pl.kperczynski.kube_spot_operator.ec2.InstanceAction
 import pl.kperczynski.kube_spot_operator.ec2.ec2MetadataHttpClient
@@ -60,6 +63,36 @@ class Ec2MetadataClientTest {
     cordonNode
       .onSuccess { instanceAction ->
         assertThat(instanceAction).isNull()
+      }
+      .onComplete({ ctx.completeNow() }, ctx::failNow)
+  }
+
+  @ParameterizedTest
+  @CsvSource(
+    value = [
+      "InService, IN_SERVICE",
+      "Standby, STANDBY",
+      "Terminating, TERMINATING",
+      "Terminating:Wait, TERMINATING_WAIT",
+      "Terminating:Proceed, TERMINATING_PROCEED",
+      "Terminated, TERMINATED",
+      "Detaching, DETACHING",
+      "Detached, DETACHED",
+      "EnteringStandby, ENTERING_STANDBY",
+    ]
+  )
+  fun testFetchAsgLifecycleSuccess(rawState: String, asgLifecycleState: AsgLifecycleState, ctx: VertxTestContext) {
+    // given:
+    val stubs = ec2MetadataStubs.stubIssueToken().compose {
+      ec2MetadataStubs.stubAsgLifecycleStateSuccess(rawState)
+    }
+
+    val fetchAsgLifecycle = stubs.compose { ec2MetadataClient.fetchAsgTargetLifecycleState() }
+
+    // when & then:
+    fetchAsgLifecycle
+      .onSuccess { lifecycleState ->
+        assertThat(lifecycleState).isEqualTo(asgLifecycleState)
       }
       .onComplete({ ctx.completeNow() }, ctx::failNow)
   }

@@ -3,8 +3,9 @@ package pl.kperczynski.kube_spot_operator.ec2
 import io.vertx.core.Future
 import io.vertx.core.VerticleBase
 import pl.kperczynski.kube_spot_operator.config.KubeNodeProps
-import pl.kperczynski.kube_spot_operator.domain.EventIds
+import pl.kperczynski.kube_spot_operator.domain.EventIds.NODE_TERMINATION_SCHEDULED
 import pl.kperczynski.kube_spot_operator.domain.model.NodeTerminationScheduledInput
+import pl.kperczynski.kube_spot_operator.ec2.AsgLifecycleState.*
 import pl.kperczynski.kube_spot_operator.logging.Slf4j
 import java.time.Duration
 
@@ -35,12 +36,12 @@ class EC2EventsVerticle(
   }
 
   private fun observeSpotTermination() {
-    ec2MetadataClient.fetchInstanceAction().onSuccess { instanceAction ->
-      if (terminationScheduled) {
-        log.trace("Termination already scheduled for current ec2 instance node={}", kubeNodeProps.currentNodeName)
-        return@onSuccess
-      }
+    if (terminationScheduled) {
+      log.trace("Termination already scheduled for current ec2 instance node={}", kubeNodeProps.currentNodeName)
+      return
+    }
 
+    ec2MetadataClient.fetchInstanceAction().onSuccess { instanceAction ->
       if (instanceAction == null) {
         log.trace("No scheduled actions for current ec2 instance node={}", kubeNodeProps.currentNodeName)
         return@onSuccess
@@ -55,12 +56,39 @@ class EC2EventsVerticle(
         )
 
         vertx.eventBus().send(
-          EventIds.NODE_TERMINATION_SCHEDULED,
+          NODE_TERMINATION_SCHEDULED,
           NodeTerminationScheduledInput(nodeId = kubeNodeProps.currentNodeName)
         )
         terminationScheduled = true
       }
     }
-  }
 
+    ec2MetadataClient.fetchAsgTargetLifecycleState().onSuccess { lifecycleState ->
+      log.trace(
+        "Fetched requested ASG lifecycle state={} for node={}",
+        kubeNodeProps.currentNodeName,
+        lifecycleState
+      )
+
+      when (lifecycleState) {
+        TERMINATING_WAIT, TERMINATING, TERMINATING_PROCEED -> {
+          log.info(
+            "ASG requested node={} to transition into state={}",
+            kubeNodeProps.currentNodeName,
+            lifecycleState
+          )
+
+          vertx.eventBus().send(
+            NODE_TERMINATION_SCHEDULED,
+            NodeTerminationScheduledInput(nodeId = kubeNodeProps.currentNodeName)
+          )
+          terminationScheduled = true
+        }
+
+        else -> {
+          // no-op
+        }
+      }
+    }
+  }
 }
