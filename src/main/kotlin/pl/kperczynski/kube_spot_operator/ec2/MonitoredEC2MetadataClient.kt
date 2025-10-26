@@ -52,7 +52,7 @@ class MonitoredEC2MetadataClient(
           METRIC_NAME,
           listOf(
             Tag.of("operation", "fetchAsgTargetLifecycleState"),
-            Tag.of("lifecycleState", state.name),
+            Tag.of("action", state.name),
             Tag.of("status", "success"),
             Tag.of("exception", "none")
           )
@@ -64,7 +64,7 @@ class MonitoredEC2MetadataClient(
           METRIC_NAME,
           listOf(
             Tag.of("operation", "fetchAsgTargetLifecycleState"),
-            Tag.of("lifecycleState", "none"),
+            Tag.of("action", "none"),
             Tag.of("status", "failure"),
             Tag.of("exception", ex.javaClass.simpleName)
           )
