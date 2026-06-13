@@ -8,6 +8,7 @@ Kube Spot Operator solves two critical challenges in AWS-based Kubernetes enviro
 
 ### 1. Graceful Spot Instance Termination Handling
 - Monitors AWS EC2 spot instance termination notices via the instance metadata service
+- Monitors EC2 Rebalance Recommendations for early warning of Spot Instance interruption
 - Automatically cordons and drains nodes scheduled for termination
 - Ensures proper pod rescheduling before instance shutdown
 - Cleans up Kubernetes node resources after termination
@@ -31,9 +32,10 @@ Kube Spot Operator solves two critical challenges in AWS-based Kubernetes enviro
 
 The operator runs as a Kubernetes deployment and:
 1. Listens for EC2 spot termination notices
-2. Manages node draining and cleanup procedures
-3. Serves JWKS endpoints for pod authentication
-4. Provides monitoring endpoints for operational visibility
+2. Listens for EC2 Rebalance Recommendations to drain nodes before interruption
+3. Manages node draining and cleanup procedures
+4. Serves JWKS endpoints for pod authentication
+5. Provides monitoring endpoints for operational visibility
 
 ## Configuration
 
@@ -47,7 +49,8 @@ The application is configured through a `configmap.json` file:
   },
   "ec2": {
     "region": "us-east-1",
-    "metadataEndpoint": "http://169.254.169.254"
+    "metadataEndpoint": "http://169.254.169.254",
+    "rebalanceInterval": 5000
   },
   "jwks": {
     "enabled": true,
@@ -78,6 +81,7 @@ kubectl apply -f deployment.yaml
 
 Monitor spot instance lifecycle events through Prometheus metrics:
 - Termination notice events
+- Rebalance recommendation events
 - Node drain durations
 - Pod rescheduling times
 - JWKS endpoint usage

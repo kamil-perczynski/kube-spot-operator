@@ -75,6 +75,44 @@ class Ec2MetadataApiStubs(private val wiremock: WireMockServer) {
     )
   }
 
+  fun stubRebalanceRecommendationNotFound(): Future<StubMapping> {
+    return Future.succeededFuture(
+      wiremock.stubFor(
+        get("/latest/meta-data/events/recommendations/rebalance")
+          .willReturn(
+            aResponse()
+              .withStatus(404)
+              .withHeader(CONTENT_TYPE.toString(), "application/plain")
+              .withBody(
+                """
+                <html>
+                  <head><title>404 Not Found</title></head>
+                  <body>
+                    <h1>Not Found</h1>
+                    The requested resource /latest/meta-data/events/recommendations/rebalance was not found on this server.
+                  </body>
+                </html>
+              """.trimIndent()
+              )
+          )
+      )
+    )
+  }
+
+  fun stubRebalanceRecommendationSuccess(): Future<StubMapping> {
+    return Future.succeededFuture(
+      wiremock.stubFor(
+        get("/latest/meta-data/events/recommendations/rebalance")
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader(CONTENT_TYPE.toString(), "text/plain")
+              .withBody("{\"noticeTime\":\"2020-10-27T08:22:00Z\"}")
+          )
+      )
+    )
+  }
+
   fun resetAll() {
     wiremock.resetAll()
   }
