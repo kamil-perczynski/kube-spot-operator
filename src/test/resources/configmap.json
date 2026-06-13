@@ -16,6 +16,7 @@
   },
   "ec2": {
     "apiOrigin": "http://127.0.0.1:29014",
-    "ttlSeconds": 21600
+    "ttlSeconds": 21600,
+    "rebalanceInterval": 5000
   }
 }

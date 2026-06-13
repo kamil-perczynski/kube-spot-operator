@@ -65,7 +65,7 @@ class MainVerticle() : VerticleBase() {
 }
 
 fun bootstrapConfig(vertx: Vertx): Future<ConfigMap> {
-  vertx.eventBus().registerDefaultCodec(Object::class.java, DirectMessageCodec())
+  vertx.eventBus().registerDefaultCodec(Any::class.java, DirectMessageCodec())
   vertx.eventBus().codecSelector { DirectMessageCodec.DIRECT_CODEC_NAME }
 
   val objectMapper = DatabindCodec.mapper()

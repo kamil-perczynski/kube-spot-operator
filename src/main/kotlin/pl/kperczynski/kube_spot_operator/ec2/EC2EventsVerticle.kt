@@ -25,10 +25,19 @@ class EC2EventsVerticle(
 
     if (ec2MetadataProps.enabled) {
       val interval = Duration.ofMillis(ec2MetadataProps.timerInterval)
+      val rebalanceInterval = Duration.ofMillis(ec2MetadataProps.rebalanceInterval)
 
       log.info("Starting EC2 metadata checking for termination every: {}s", interval.toSeconds())
       vertx.setPeriodic(ec2MetadataProps.timerInterval) {
         observeSpotTermination()
+      }
+
+      log.info(
+        "Starting EC2 rebalance recommendation checking every: {}s",
+        rebalanceInterval.toSeconds()
+      )
+      vertx.setPeriodic(ec2MetadataProps.rebalanceInterval) {
+        observeRebalanceRecommendation()
       }
     }
 
@@ -89,6 +98,32 @@ class EC2EventsVerticle(
           // no-op
         }
       }
+    }
+  }
+
+  private fun observeRebalanceRecommendation() {
+    if (terminationScheduled) {
+      log.trace("Termination already scheduled for current ec2 instance node={}", kubeNodeProps.currentNodeName)
+      return
+    }
+
+    ec2MetadataClient.fetchRebalanceRecommendation().onSuccess { recommendation ->
+      if (recommendation == null) {
+        log.trace("No rebalance recommendation for current ec2 instance node={}", kubeNodeProps.currentNodeName)
+        return@onSuccess
+      }
+
+      log.info(
+        "Current node={} received rebalance recommendation: {}",
+        kubeNodeProps.currentNodeName,
+        recommendation
+      )
+
+      vertx.eventBus().send(
+        NODE_TERMINATION_SCHEDULED,
+        NodeTerminationScheduledInput(nodeId = kubeNodeProps.currentNodeName)
+      )
+      terminationScheduled = true
     }
   }
 }

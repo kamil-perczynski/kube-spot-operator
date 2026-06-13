@@ -5,7 +5,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
 plugins {
-  kotlin("jvm") version "2.0.0"
+  kotlin("jvm") version "2.4.0"
   application
   // spring boot plugin
   id("org.springframework.boot") version "3.5.6"
@@ -49,10 +49,11 @@ dependencies {
   testImplementation("org.wiremock:wiremock:3.13.1")
   testImplementation("io.vertx:vertx-junit5")
   testImplementation("org.junit.jupiter:junit-jupiter:$junitJupiterVersion")
+  testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.9.1")
 }
 
 val compileKotlin: KotlinCompile by tasks
-compileKotlin.compilerOptions.jvmTarget = JvmTarget.JVM_21
+compileKotlin.compilerOptions.jvmTarget = JvmTarget.JVM_25
 
 tasks.withType<KotlinJvmCompile>().configureEach {
   jvmTargetValidationMode.set(IGNORE)

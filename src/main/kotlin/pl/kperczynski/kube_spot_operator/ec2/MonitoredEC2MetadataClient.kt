@@ -74,4 +74,35 @@ class MonitoredEC2MetadataClient(
     )
   }
 
+  override fun fetchRebalanceRecommendation(): Future<RebalanceRecommendation?> {
+    val sample = start(meterRegistry)
+
+    return delegate.fetchRebalanceRecommendation().onComplete(
+      { recommendation ->
+        val timer = meterRegistry.timer(
+          METRIC_NAME,
+          listOf(
+            Tag.of("operation", "fetchRebalanceRecommendation"),
+            Tag.of("action", if (recommendation == null) "none" else "rebalanceRecommended"),
+            Tag.of("status", "success"),
+            Tag.of("exception", "none")
+          )
+        )
+        sample.stop(timer)
+      },
+      { ex ->
+        val timer = meterRegistry.timer(
+          METRIC_NAME,
+          listOf(
+            Tag.of("operation", "fetchRebalanceRecommendation"),
+            Tag.of("action", "none"),
+            Tag.of("status", "failure"),
+            Tag.of("exception", ex.javaClass.simpleName)
+          )
+        )
+        sample.stop(timer)
+      }
+    )
+  }
+
 }

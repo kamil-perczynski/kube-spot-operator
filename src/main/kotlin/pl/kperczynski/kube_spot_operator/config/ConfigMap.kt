@@ -29,6 +29,7 @@ fun parseConfigMap(jsonObject: JsonObject): ConfigMap {
 fun readEc2MetadataProps(json: JsonObject): EC2MetadataProps {
   return EC2MetadataProps(
     timerInterval = json.getLong("timerInterval", 30_000L),
+    rebalanceInterval = json.getLong("rebalanceInterval", 5_000L),
     enabled = json.getBoolean("enabled", true),
     apiOrigin = json.getString("apiOrigin"),
     ttlSeconds = json.getLong("ttlSeconds")

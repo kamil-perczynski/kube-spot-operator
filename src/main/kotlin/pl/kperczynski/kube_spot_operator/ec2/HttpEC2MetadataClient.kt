@@ -72,6 +72,35 @@ class HttpEC2MetadataClient(
       }
   }
 
+  override fun fetchRebalanceRecommendation(): Future<RebalanceRecommendation?> {
+    return acquireToken()
+      .compose { token ->
+        httpClient.request(GET, "/latest/meta-data/events/recommendations/rebalance")
+          .onSuccess(preconfigureRequest(log, Level.TRACE))
+          .compose { req ->
+            req.putHeader(X_AWS_EC2_METADATA_TOKEN, token)
+            req.send()
+          }
+      }
+      .compose { res ->
+        if (res.statusCode() == 404) {
+          return@compose Future.succeededFuture(null)
+        }
+        handleResponseErrors(res, log)
+      }
+      .map { body ->
+        if (body == null) {
+          return@map null
+        }
+
+        val json = JsonObject(body.toString(Charsets.UTF_8))
+
+        RebalanceRecommendation(
+          noticeTime = json.getString("noticeTime")
+        )
+      }
+  }
+
   private fun acquireToken(): Future<String> {
     if (!this::validTo.isInitialized) {
       log.info("EC2 metadata token is missing, fetching a new one")

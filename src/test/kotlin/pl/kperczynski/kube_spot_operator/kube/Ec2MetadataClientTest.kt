@@ -15,6 +15,7 @@ import pl.kperczynski.kube_spot_operator.config.ConfigMap
 import pl.kperczynski.kube_spot_operator.ec2.AsgLifecycleState
 import pl.kperczynski.kube_spot_operator.ec2.HttpEC2MetadataClient
 import pl.kperczynski.kube_spot_operator.ec2.InstanceAction
+import pl.kperczynski.kube_spot_operator.ec2.RebalanceRecommendation
 import pl.kperczynski.kube_spot_operator.ec2.ec2MetadataHttpClient
 
 @ExtendWith(VertxExtension::class)
@@ -111,6 +112,40 @@ class Ec2MetadataClientTest {
           InstanceAction(
             action = "terminate",
             time = "2025-10-17T14:51:09Z"
+          )
+        )
+      }
+      .onComplete({ ctx.completeNow() }, ctx::failNow)
+  }
+
+  @Test
+  fun testFetchRebalanceRecommendation404(ctx: VertxTestContext) {
+    val stubs = ec2MetadataStubs.stubIssueToken().compose {
+      ec2MetadataStubs.stubRebalanceRecommendationNotFound()
+    }
+
+    val fetchRebalanceRecommendation = stubs.compose { ec2MetadataClient.fetchRebalanceRecommendation() }
+
+    fetchRebalanceRecommendation
+      .onSuccess { recommendation ->
+        assertThat(recommendation).isNull()
+      }
+      .onComplete({ ctx.completeNow() }, ctx::failNow)
+  }
+
+  @Test
+  fun testFetchRebalanceRecommendation200(ctx: VertxTestContext) {
+    val stubs = ec2MetadataStubs.stubIssueToken().compose {
+      ec2MetadataStubs.stubRebalanceRecommendationSuccess()
+    }
+
+    val fetchRebalanceRecommendation = stubs.compose { ec2MetadataClient.fetchRebalanceRecommendation() }
+
+    fetchRebalanceRecommendation
+      .onSuccess { recommendation ->
+        assertThat(recommendation).isEqualTo(
+          RebalanceRecommendation(
+            noticeTime = "2020-10-27T08:22:00Z"
           )
         )
       }

@@ -1,11 +1,11 @@
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM eclipse-temurin:25-jdk-alpine AS builder
 
 WORKDIR /opt/app
 COPY build/libs/*-layered.jar /opt/app/app.jar
 
 RUN jar xf app.jar
 
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 
 WORKDIR /opt/app
 
